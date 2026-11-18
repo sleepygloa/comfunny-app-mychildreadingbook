@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ 백업·이전 규칙 [A-06-7] (2026-10-06 오너 결정: OS 클라우드 백업 차단).
+
+  왜 전부 제외하나:
+  - 앱 데이터(책 사진·보호자 녹음·독서 기록)는 아동·가족 개인정보다. 기기 밖으로 나가는 경로는
+    사용자가 직접 고르는 .mcrb 백업 파일 하나로만 둔다
+  - 기기 간 이전(device-transfer)도 막는다 — allowBackup=false 만으로는 Android 12+ 의 이전이 남고,
+    규칙을 둘로 나누면 어느 쪽이 열려 있는지 관리하기 어렵다. 폰 교체 시 .mcrb 로 옮긴다
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+        <exclude domain="device_root" path="." />
+        <exclude domain="device_file" path="." />
+        <exclude domain="device_database" path="." />
+        <exclude domain="device_sharedpref" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+        <exclude domain="device_root" path="." />
+        <exclude domain="device_file" path="." />
+        <exclude domain="device_database" path="." />
+        <exclude domain="device_sharedpref" path="." />
+    </device-transfer>
+</data-extraction-rules>

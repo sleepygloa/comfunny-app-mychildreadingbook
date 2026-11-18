@@ -1,0 +1,39 @@
+name: mychild_reading
+description: "작은 도서관 — 종이책을 찍어 보호자 녹음·기기 TTS 로 읽어 주는 가족용 아동 독서 앱 (기기 안에서만 처리)."
+# 가족 단위 개인 앱이라 pub.dev 에 올리지 않는다 — 실수로 `flutter pub publish` 되는 것을 막는다.
+publish_to: 'none'
+
+# 버전 이름+빌드 번호. Android versionName/versionCode, iOS CFBundleShortVersionString/CFBundleVersion 이 된다.
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  provider: ^6.1.5+1
+  get_it: ^9.2.1
+  go_router: ^18.0.1
+  path_provider: ^2.1.6
+  crypto: 3.0.7
+  uuid: ^4.6.0
+  logger: ^2.8.0
+  record: ^7.1.1
+  flutter_tts: ^4.2.5
+  audioplayers: ^6.8.1
+  camera: ^0.12.1
+  audio_service: 0.18.19
+  audio_session: 0.2.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # 린트 규칙은 analysis_options.yaml 이 켠다.
+  flutter_lints: ^6.0.0
+
+flutter:
+  # Material 아이콘 폰트를 앱에 포함한다 (Icons.* 사용).
+  uses-material-design: true
