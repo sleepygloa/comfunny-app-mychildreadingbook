@@ -53,8 +53,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--primary);outlin
 .st.warn{color:var(--warn);background:color-mix(in srgb,var(--warn) 16%,transparent)}
 .st.todo{color:var(--todo);background:color-mix(in srgb,var(--todo) 16%,transparent)}
 .legend{display:flex;flex-wrap:wrap;gap:6px;font-size:13px;color:var(--ink2)}
-.note-toggle{display:none}
-@media (max-width:820px){.note-toggle{display:flex}}
+.notes .note-toggle,.appbar .note-toggle{display:none}
+@media (max-width:820px){.notes .note-toggle,.appbar .note-toggle{display:flex}}
 
 /* ── 앱 화면 ── */
 .appbar{display:flex;align-items:center;gap:8px;padding:14px 16px 8px;padding-top:calc(14px + env(safe-area-inset-top,0px))}
@@ -171,6 +171,41 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--primary);outlin
 .camera .bar{display:flex;align-items:center;justify-content:space-between;padding:16px 24px calc(24px + env(safe-area-inset-bottom,0px))}
 .shutter{width:72px;height:72px;border-radius:36px;background:#fff;border:6px solid rgba(255,255,255,.4);background-clip:padding-box}
 .empty{color:var(--ink2);text-align:center;padding:30px 10px;line-height:1.6}
+.topic{font-size:11px;padding:1px 8px;border-radius:99px;background:var(--pub);color:var(--pub-ink);font-weight:700}
+.chips.sub{margin-top:2px}
+.chips.sub .chip{height:32px;font-size:13px}
+.chip-lbl{flex:none;align-self:center;font-size:12px;color:var(--ink2);margin-right:2px}
+/* 태블릿 · TV 미리보기: 넓은 화면에서 폰 틀을 가로 화면으로 바꾼다 */
+.phone.tablet{width:900px;height:min(600px,calc(100vh - 48px));border-radius:28px}
+.phone.tv{width:1000px;height:min(562px,calc(100vh - 48px));border-radius:10px;border-width:14px}
+@media (max-width:820px){.phone.tablet,.phone.tv{width:100%;height:100%;border-radius:0;border-width:0}}
+.devsw{display:flex;gap:6px}
+.devsw .chip{flex:1}
+.watch{position:absolute;inset:0;background:#0f1118;color:#F6F1E7;z-index:25;display:flex;flex-direction:column;
+  padding:calc(10px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.watch .wtop{display:flex;align-items:center;gap:8px;min-height:48px}
+.watch .wtop b{flex:1;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.watch .wbtn{min-width:48px;height:48px;border-radius:24px;background:rgba(255,255,255,.12);color:#fff;font-size:20px;display:grid;place-items:center;padding:0 12px}
+.watch .wbtn[aria-pressed="true"]{background:#D1C2FF;color:#241B3D}
+.watch .wstage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:18px;position:relative;container-type:size}
+.watch .wstage .spread{width:min(100cqw,133cqh);height:auto;aspect-ratio:4/3;border-radius:18px}
+.watch .sub{text-align:center;font-family:var(--font);font-size:clamp(20px,3.2vw,34px);line-height:1.4;padding:10px 8px;min-height:2.6em;text-shadow:0 2px 6px rgba(0,0,0,.6)}
+.watch .wbar{height:4px;border-radius:2px;background:rgba(255,255,255,.18);overflow:hidden}
+.watch .wbar i{display:block;height:100%;background:#D1C2FF}
+.watch .wctrl{display:flex;justify-content:center;gap:18px;padding-top:10px}
+.watch .wctrl button{width:64px;height:64px;border-radius:32px;background:rgba(255,255,255,.14);color:#fff;font-size:26px}
+.watch.locked .wctrl,.watch.locked .wtop .hide-lock{visibility:hidden}
+.lockhint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.75);padding:14px 18px;border-radius:16px;text-align:center;font-size:15px;line-height:1.5;z-index:3}
+.hold{position:relative;overflow:hidden}
+.hold i{position:absolute;left:0;bottom:0;height:4px;background:#D1C2FF;width:0}
+.hold.on i{width:100%;transition:width 1.5s linear}
+/* AI 움직이는 그림 흉내: 천천히 확대·이동 + 떠다니는 빛. 실제 AI 영상 아님 */
+.alive .spread{animation:kb 8s ease-in-out infinite alternate}
+.alive::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 30% 40%,rgba(255,255,255,.35) 0 6px,transparent 7px),radial-gradient(circle at 70% 25%,rgba(255,255,255,.3) 0 4px,transparent 5px),radial-gradient(circle at 55% 70%,rgba(255,255,255,.25) 0 5px,transparent 6px);animation:float 4s ease-in-out infinite alternate}
+@keyframes kb{from{transform:scale(1) translate(0,0)}to{transform:scale(1.08) translate(-2%,-1%)}}
+@keyframes float{to{transform:translateY(-14px)}}
+@media (prefers-reduced-motion:reduce){.alive .spread,.alive::after{animation:none}}
+.ai-tag{position:absolute;right:10px;bottom:10px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:4px 10px;border-radius:99px;z-index:2}
 </style>
 
 <div class="stage">
@@ -181,23 +216,33 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--primary);outlin
 <script>
 // ─── 합성 데이터 (실제 가족 자료 아님) ───
 const PAL=[["#FFD7C2","#FFF0D6"],["#D6ECDD","#F2F7E8"],["#E3DAFF","#F4EFFF"],["#FFE3A8","#FFF4D9"],["#CFE6F5","#EEF6FB"],["#F8D3DE","#FDEFF3"]];
+// 주제 사전: 위 주제(p)를 가리키는 나무. 책은 주제 id 만 참조한다(조인).
+const TOPICS={
+  sci:{n:"과학",p:null,e:"🔬"}, env:{n:"환경",p:"sci",e:"🌍"}, air:{n:"대기오염",p:"env",e:"🌫"}, water:{n:"물 아끼기",p:"env",e:"💧"},
+  animal:{n:"동물",p:"sci",e:"🐸"}, insect:{n:"곤충",p:"animal",e:"🦋"}, season:{n:"계절",p:"sci",e:"🍂"}, space:{n:"우주",p:"sci",e:"🪐"},
+  life:{n:"생활",p:null,e:"🏠"}, family:{n:"가족",p:"life",e:"👪"}, sleep:{n:"잠자리",p:"life",e:"🌙"},
+};
 const DB={
   books:[
-    {id:1,pub:"햇살출판",series:"자연 관찰 전집",no:1,title:"개구리가 폴짝",pages:["연못에 개구리가 살아요.","개구리가 폴짝 뛰어요.","비가 오면 개굴개굴 노래해요."],tracks:["녹음","기기 읽기"],c:0},
-    {id:2,pub:"햇살출판",series:"자연 관찰 전집",no:2,title:"나비의 하루",pages:["애벌레가 잎을 먹어요.","번데기 안에서 쿨쿨 자요.","나비가 되어 훨훨 날아요."],tracks:["녹음"],c:1},
-    {id:3,pub:"햇살출판",series:"자연 관찰 전집",no:3,title:"다람쥐의 겨울 준비",pages:["도토리를 모아요.","굴 속에 숨겨 두어요."],tracks:["기기 읽기"],c:3},
-    {id:4,pub:"달빛그림책",series:"잠자리 동화",no:1,title:"달님 안녕",pages:["밤이 되었어요.","달님이 웃어요.","모두 잘 자요."],tracks:["녹음","기기 읽기"],c:2},
-    {id:5,pub:"달빛그림책",series:"잠자리 동화",no:2,title:"별 세는 밤",pages:["하나, 둘, 셋.","별이 반짝반짝."],tracks:["녹음"],c:4},
-    {id:6,pub:"",series:"우리집 책",no:1,title:"할머니 집에 가요",pages:["기차를 타요.","할머니가 안아 주셨어요."],tracks:[],c:5},
+    {id:1,pub:"햇살출판",series:"자연 관찰 전집",no:1,title:"개구리가 폴짝",topics:["animal"],pages:["연못에 개구리가 살아요.","개구리가 폴짝 뛰어요.","비가 오면 개굴개굴 노래해요."],tracks:["녹음","기기 읽기"],c:0},
+    {id:2,pub:"햇살출판",series:"자연 관찰 전집",no:2,title:"나비의 하루",topics:["insect"],pages:["애벌레가 잎을 먹어요.","번데기 안에서 쿨쿨 자요.","나비가 되어 훨훨 날아요."],tracks:["녹음"],c:1},
+    {id:3,pub:"햇살출판",series:"자연 관찰 전집",no:3,title:"다람쥐의 겨울 준비",topics:["animal","season"],pages:["도토리를 모아요.","굴 속에 숨겨 두어요."],tracks:["기기 읽기"],c:3},
+    {id:4,pub:"달빛그림책",series:"잠자리 동화",no:1,title:"달님 안녕",topics:["sleep","space"],pages:["밤이 되었어요.","달님이 웃어요.","모두 잘 자요."],tracks:["녹음","기기 읽기"],c:2},
+    {id:5,pub:"달빛그림책",series:"잠자리 동화",no:2,title:"별 세는 밤",topics:["space","sleep"],pages:["하나, 둘, 셋.","별이 반짝반짝."],tracks:["녹음"],c:4},
+    {id:6,pub:"",series:"우리집 책",no:1,title:"할머니 집에 가요",topics:["family"],pages:["기차를 타요.","할머니가 안아 주셨어요."],tracks:[],c:5},
+    {id:7,pub:"햇살출판",series:"자연 관찰 전집",no:4,title:"하늘이 뿌예요",topics:["air"],pages:["오늘은 하늘이 뿌예요.","미세먼지가 많은 날엔 마스크를 써요.","나무를 심으면 공기가 맑아져요."],tracks:["녹음"],c:4},
   ],
   lists:[{id:1,title:"잠들기 전에",ids:[4,5,1]},{id:2,title:"주말 아침",ids:[2,3]}],
   drafts:[{title:"제목 없는 책",pages:2}],
 };
-const S={tab:"shelf",pub:"전체",q:"",open:{"자연 관찰 전집":true,"잠자리 동화":true,"우리집 책":false},
+const S={tab:"shelf",pub:"전체",topic:null,dev:"phone",watchLock:false,alive:false,q:"",open:{"자연 관찰 전집":true,"잠자리 동화":true,"우리집 책":false},
   queue:[4,5,1],qi:0,page:0,playing:false,prog:0,src:"녹음",overlay:null,sheet:null,notesOpen:false,rec:{},
   draft:null};
 
 const $=s=>document.querySelector(s);
+const tpath=id=>{const o=[];for(let t=id;t;t=TOPICS[t].p)o.unshift(t);return o};
+const inTopic=(b,id)=>!id||(b.topics||[]).some(t=>tpath(t).includes(id));
+const tbadge=id=>`<button class="topic" data-act="topic" data-v="${id}" aria-label="주제 ${esc(tpath(id).map(t=>TOPICS[t].n).join(", "))}">${TOPICS[id].e} ${esc(TOPICS[id].n)}</button>`;
 const book=id=>DB.books.find(b=>b.id===id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function cover(b,w){const[p,q]=PAL[b.c%PAL.length];return `<div class="cover" style="background:linear-gradient(160deg,${p},${q})${w?';width:'+w+'px':''}" aria-hidden="true">${esc(b.title.slice(0,2))}</div>`}
@@ -207,19 +252,21 @@ const buddy=`<svg class="buddy" viewBox="0 0 80 80" role="button" aria-label="�
 // ─── 기획 메모: 화면마다 지금 상태 ───
 const NOTES={
   shelf:{t:"책장",d:"출판사 → 전집 → 책 번호 순서로 정리된 우리집 책장. 검색과 출판사 배지로 거른다.",
-    items:[["ok","검색 · 출판사 배지 · 전집 펼치기"],["ok","재생 · 전집 재생 · 전체 재생"],["ok","＋ 로 책 만들기, 책 메뉴(목소리 넣기 · 편집 · 삭제)"],["ok","만들던 책(초안) 이어 만들기 · 버리기"],["todo","연령별 분류 — 3단계 이후"]]},
+    items:[["ok","검색 · 출판사 배지 · 전집 펼치기"],["todo","주제 배지(과학 › 환경 › 대기오염) · 주제로 거르기 — 이번 시안"],["ok","재생 · 전집 재생 · 전체 재생"],["ok","＋ 로 책 만들기, 책 메뉴(목소리 넣기 · 편집 · 삭제)"],["ok","만들던 책(초안) 이어 만들기 · 버리기"],["todo","연령별 분류 — 3단계 이후"]]},
   lists:{t:"플레이리스트",d:"\"잠들기 전에\"처럼 책 묶음을 저장해 두고 한 번에 듣는다.",
     items:[["ok","만들기 · 이름 바꾸기 · 삭제(책은 그대로)"],["ok","책 담기 · 빼기 · 끌어서 순서 바꾸기"]]},
   queue:{t:"최근재생목록",d:"지금 듣는 순서. 앱을 다시 켜도 남아 있지만 저절로 재생되지는 않는다.",
     items:[["ok","순서 바꾸기 · 빼기 · 비우기"],["ok","저장한 플레이리스트와 따로 움직임"],["warn","잠금화면 · 알림 조작 — 실제 폰 확인 남음"]]},
   settings:{t:"설정 · 백업",d:"사진과 목소리를 한 파일(.mcrb)로 내 기기에 보관한다. 인터넷으로 보내지 않는다.",
-    items:[["ok","백업 저장 · 검사 · 책장 복원(Android)"],["warn","가족 폰에서 복원 확인 남음"],["todo","iOS 백업 — 아직 없음(버튼 꺼짐)"],["todo","백업 파일 암호화 — 후보"]]},
+    items:[["ok","백업 저장 · 검사 · 책장 복원(Android)"],["warn","가족 폰에서 복원 확인 남음"],["todo","iOS 백업 — 아직 없음(버튼 꺼짐)"],["todo","백업 파일 암호화 — 후보"],["todo","가족 계정 로그인 · 내 책만 보기 · 내보내기 막기 — M2c"]]},
   author:{t:"책 만들기",d:"표지 한 장 + 펼친 면을 연달아 찍는다. 사진만으로도 저장되고, 목소리는 나중에 넣는다.",
     items:[["ok","전집 · 책 번호 필수, 출판사 선택"],["ok","가로 연속 촬영 · 자르기 · 밝기/대비"],["ok","0.9초마다 자동 보관 · 뒤로 가도 보관"],["warn","실제 카메라 촬영 — 실기기 확인 남음"],["todo","글자 자동 인식(OCR) — 3단계"]]},
   voice:{t:"목소리 넣기",d:"페이지마다 부모가 직접 읽어 녹음하거나, 글을 넣어 기기 목소리로 읽힌다.",
     items:[["ok","페이지별 녹음 · 들어보기"],["ok","기기 읽기(Android 오프라인 한국어 음성만)"],["warn","iOS 는 기기 읽기 대신 녹음 안내"],["todo","부모 목소리 AI(한 번 등록 → 자동 낭독) — M3, 처리 방식 미정"]]},
+  watch:{t:"영상처럼 보기",d:"차 · 태블릿 · TV 에서 아이가 혼자 보는 화면. 그림이 크게, 자막과 목소리가 나오고 저절로 넘어간다.",
+    items:[["todo","가로 전체 화면 · 자동 넘김 · 큰 자막"],["todo","아이 잠금 — 🔒 길게 눌러야 풀림"],["todo","태블릿 · TV 연결(캐스트) — 방식은 개발 때 결정"],["todo","✨ 움직이는 그림 — 책 그림만 클라우드 AI 로 보냄(아이 사진 · 목소리는 기기 안). 2026-11-19 결정"]]},
   reader:{t:"책 읽기",d:"아이가 그림을 보며 듣는 화면. 한 페이지에 여러 목소리를 두고 바꿔 들을 수 있다.",
-    items:[["ok","페이지 재생 · 넘기기 · 읽던 곳 기억"],["ok","목소리 고르기(녹음 / 기기 읽기)"],["warn","화면 꺼짐 · 이어폰 분리 — 실기기 확인 남음"],["todo","AI 목소리 트랙 — M3"]]},
+    items:[["ok","페이지 재생 · 넘기기 · 읽던 곳 기억"],["ok","목소리 고르기(녹음 / 기기 읽기)"],["warn","화면 꺼짐 · 이어폰 분리 — 실기기 확인 남음"],["todo","AI 목소리 트랙 — M3"],["todo","📺 영상처럼 보기 · ✨ 움직이는 그림 — 이번 시안"]]},
 };
 function renderNotes(){
   const key=S.overlay||S.tab, n=NOTES[key];
@@ -229,20 +276,31 @@ function renderNotes(){
   <div class="note-card"><h2>지금 단계</h2>
     <p>로컬 MVP 구현 완료 · 실제 폰 검증 남음. 인터넷 없이 기기 안에서만 동작한다.</p>
     <div class="legend"><span class="st ok">됨</span>앱에 구현 <span class="st warn">확인 남음</span>실기기 미확인 <span class="st todo">아직</span>미구현</div></div>
+  <div class="note-card"><h2>화면 크기</h2><p>태블릿 · TV 를 고르면 영상처럼 보기가 가로 화면으로 열려요.</p>
+    <div class="devsw" role="group" aria-label="화면 크기">${[["phone","📱 폰"],["tablet","📲 태블릿"],["tv","📺 TV"]].map(([k,l])=>`<button class="chip" aria-pressed="${S.dev===k}" data-act="dev" data-v="${k}">${l}</button>`).join("")}</div></div>
   <div class="note-card"><p style="margin:0">책과 글은 모두 예시예요. 버튼을 눌러 화면을 넘겨 보세요.</p>
     <button class="btn soft note-toggle" data-act="notes" style="margin-top:10px;width:100%">메모 닫기</button></div>`;
   $("#notes").hidden = window.matchMedia("(max-width:820px)").matches && !S.notesOpen;
 }
 
 // ─── 화면 ───
+function topicChips(){
+  // 1줄: 큰 주제. 고른 주제에 아래 주제가 있으면 2줄에 펼친다.
+  const roots=Object.keys(TOPICS).filter(k=>!TOPICS[k].p);
+  const path=S.topic?tpath(S.topic):[];
+  const rows=[roots];
+  path.forEach(t=>{const kids=Object.keys(TOPICS).filter(k=>TOPICS[k].p===t);if(kids.length)rows.push(kids)});
+  return rows.map((r,i)=>`<div class="chips ${i?"sub":""}" role="group" aria-label="주제 ${i+1}단계">${i===0?`<span class="chip-lbl">주제</span><button class="chip" aria-pressed="${!S.topic}" data-act="topicset" data-v="">전체</button>`:""}${r.map(k=>`<button class="chip" aria-pressed="${path.includes(k)}" data-act="topicset" data-v="${k}">${TOPICS[k].e} ${esc(TOPICS[k].n)}</button>`).join("")}</div>`).join("");
+}
 function shelf(){
   const pubs=["전체",...new Set(DB.books.map(b=>b.pub||"출판사 없음"))];
-  let bs=DB.books.filter(b=>(S.pub==="전체"||(b.pub||"출판사 없음")===S.pub)&&(!S.q||b.title.includes(S.q)||b.series.includes(S.q)));
+  let bs=DB.books.filter(b=>(S.pub==="전체"||(b.pub||"출판사 없음")===S.pub)&&inTopic(b,S.topic)&&(!S.q||b.title.includes(S.q)||b.series.includes(S.q)));
   const groups={};bs.forEach(b=>{const p=b.pub||"출판사 없음";(groups[p]??={});(groups[p][b.series]??=[]).push(b)});
   return `
   <div class="welcome">${buddy}<div><h2>오늘은 어떤 책을\n함께 읽을까요?</h2><p>${DB.books.length}권의 이야기가 기다리고 있어요.</p></div></div>
   <div class="search">🔍<input id="q" placeholder="책 제목이나 전집 찾기" value="${esc(S.q)}" aria-label="책 검색"></div>
   <div class="chips" role="group" aria-label="출판사">${pubs.map(p=>`<button class="chip" aria-pressed="${S.pub===p}" data-act="pub" data-v="${esc(p)}">${esc(p)}</button>`).join("")}</div>
+  ${topicChips()}
   <div class="row-actions"><button class="btn primary" data-act="playall">▶ 전체 재생 (${bs.length}권)</button>
     <button class="btn soft" data-act="drafts">만들던 책 (${DB.drafts.length})</button></div>
   ${bs.length?Object.entries(groups).map(([p,ss])=>`
@@ -252,7 +310,7 @@ function shelf(){
         <span>📚</span><span class="t">${esc(s)}</span><span class="c">${list.length}권 ${S.open[s]?"▾":"▸"}</span></button>
       ${S.open[s]?`<div class="series-body">${list.sort((a,b)=>a.no-b.no).map(b=>`
         <div class="book">${cover(b)}<div class="meta"><b>${b.no}. ${esc(b.title)}</b><span>${b.pages.length}쪽</span>
-          <div class="tracks">${b.tracks.length?b.tracks.map(t=>`<span class="tk">${t==="녹음"?"🎙 녹음":"🔊 기기 읽기"}</span>`).join(""):`<span class="tk">목소리 없음</span>`}</div></div>
+          <div class="tracks">${(b.topics||[]).map(tbadge).join("")}${b.tracks.length?b.tracks.map(t=>`<span class="tk">${t==="녹음"?"🎙 녹음":"🔊 기기 읽기"}</span>`).join(""):`<span class="tk">목소리 없음</span>`}</div></div>
           <button class="more" data-act="menu" data-v="${b.id}" aria-label="${esc(b.title)} 메뉴">⋮</button>
           <button class="play-sm" data-act="play" data-v="${b.id}" aria-label="${esc(b.title)} 재생">▶</button></div>`).join("")}
         <div class="row-actions" style="margin-bottom:0"><button class="btn soft" data-act="playseries" data-v="${esc(s)}">▶ 전집 재생</button><button class="btn soft" data-act="new">＋ 이 전집에 책 추가</button></div>
@@ -262,6 +320,7 @@ function lists(){
   return `<div class="welcome list">${buddy}<div><h2>나만의 목록을 만들어 보세요</h2><p>잠들기 전, 좋아하는 이야기처럼 모아둘 수 있어요.</p></div></div>
   ${DB.lists.map(l=>`<div class="list-card"><div class="stack">${l.ids.slice(0,3).map(i=>cover(book(i))).join("")}</div>
     <div class="meta"><b>${esc(l.title)}</b><br><span>${l.ids.length}권</span></div>
+    <button class="more" data-act="watchlist" data-v="${l.id}" aria-label="${esc(l.title)} 영상처럼 보기" style="font-size:22px">📺</button>
     <button class="play-sm" data-act="playlist" data-v="${l.id}" aria-label="${esc(l.title)} 전체 재생">▶</button></div>`).join("")}
   <div class="row-actions"><button class="btn soft" data-act="toast" data-v="새 플레이리스트를 만들어요 (예시)">＋ 새 플레이리스트</button></div>`;
 }
@@ -274,6 +333,22 @@ function queue(){
     <button class="play-sm" data-act="qplay" data-v="${i}" aria-label="${esc(b.title)} 재생">▶</button></div>`}).join("")}
   <div class="row-actions"><button class="btn soft" data-act="qclear">목록 비우기</button></div>`;
 }
+function watch(){
+  const b=book(S.queue[S.qi]); if(!b) return "";
+  const total=S.queue.reduce((n,id)=>n+book(id).pages.length,0);
+  const done=S.queue.slice(0,S.qi).reduce((n,id)=>n+book(id).pages.length,0)+S.page;
+  return `<div class="watch ${S.watchLock?"locked":""}" data-act="watchtap">
+    <div class="wtop"><button class="wbtn hide-lock" data-act="watchclose" aria-label="영상처럼 보기 닫기">✕</button>
+      <b>${esc(b.title)} · ${S.qi+1}/${S.queue.length}권</b>
+      <button class="wbtn hide-lock" data-act="alive" aria-pressed="${S.alive}" aria-label="움직이는 그림">✨</button>
+      <button class="wbtn hold" data-hold="lock" aria-label="${S.watchLock?"잠금 풀기: 길게 누르기":"화면 잠그기"}">${S.watchLock?"🔒":"🔓"}<i></i></button></div>
+    <div class="wstage ${S.alive?"alive":""}">${spread(b,S.page)}${S.alive?`<span class="ai-tag">✨ 움직이는 그림 (예시)</span>`:""}
+      ${S.lockHint?`<div class="lockhint">아이 잠금 중이에요<br>🔒 를 길게 누르면 풀려요</div>`:""}</div>
+    <div class="sub">${esc(b.pages[S.page])}</div>
+    <div class="wbar"><i style="width:${Math.round(((done+S.prog/100)/total)*100)}%"></i></div>
+    <div class="wctrl"><button data-act="prev" aria-label="앞 페이지">⏮</button><button data-act="pp" aria-label="${S.playing?"일시정지":"재생"}">${S.playing?"❚❚":"▶"}</button><button data-act="next" aria-label="다음 페이지">⏭</button></div>
+  </div>`;
+}
 function settings(){
   return `<div class="set-card"><h3>우리 책과 목소리를 보관해요</h3>
     <p>책·사진·녹음·플레이리스트·만들던 책·읽던 위치를 한 파일로 저장해요. 백업 중에는 재생을 멈춰요.</p>
@@ -281,6 +356,10 @@ function settings(){
     <div class="set-row"><span>🔎</span><div class="t">백업 파일 검사<small>현재 책장은 바뀌지 않아요</small></div><button class="btn soft" data-act="toast" data-v="백업 파일에 문제가 없어요 · 책 6권 (예시)">검사</button></div>
     <div class="set-row"><span>♻️</span><div class="t">백업으로 책장 복원<small>현재 책장 전체를 바꿔요 (합치기 아님)</small></div><button class="btn soft" data-act="restore">복원</button></div>
     <div class="warnbox">백업 파일에는 가족의 사진과 목소리가 포함돼요. 암호화되지 않으니 개인 저장소에 보관해 주세요.</div></div>
+  <div class="set-card"><h3>가족 계정 <span class="st todo">계획</span></h3>
+    <p>로그인하면 우리 가족이 만든 책만 보여요. 다른 가족과 나누지 않고, 내보내기·화면 녹화는 막아요.</p>
+    <div class="set-row"><span>👤</span><div class="t">Google 로 로그인<small>여러 기기(폰·태블릿·TV)에서 같은 책장</small></div><button class="btn soft" data-act="toast" data-v="로그인은 아직 계획 단계예요 (M2c)">로그인</button></div>
+    <div class="set-row"><span>📺</span><div class="t">연결된 화면<small>차 태블릿 · 거실 TV</small></div></div></div>
   <div class="set-card"><h3>앱 안내</h3>
     <div class="set-row"><span>🎨</span><div class="t">화면 테마<small>휴대폰 설정(낮/밤)을 따라가요</small></div></div>
     <div class="set-row"><span>⏯</span><div class="t">백그라운드 재생<small>알림·잠금화면에서 조작해요. 통화나 이어폰 분리 시 멈춰요.</small></div></div>
@@ -319,10 +398,11 @@ function voice(){
 function reader(){
   const b=book(S.queue[S.qi]); if(!b) return "";
   const has=b.tracks;
-  return `<div class="appbar"><button class="icon-btn" data-act="close" aria-label="닫기">⌄</button><h1 style="font-size:20px">${esc(b.title)}</h1><button class="icon-btn" data-act="tab" data-v="queue" aria-label="최근재생목록">≡</button></div>
-  <div class="reader">${spread(b,S.page)}
+  return `<div class="appbar"><button class="icon-btn" data-act="close" aria-label="닫기">⌄</button><h1 style="font-size:20px">${esc(b.title)}</h1><button class="icon-btn" data-act="watch" aria-label="영상처럼 보기">📺</button><button class="icon-btn" data-act="tab" data-v="queue" aria-label="최근재생목록">≡</button></div>
+  <div class="reader"><div style="position:relative;overflow:hidden;border-radius:20px" class="${S.alive?"alive":""}">${spread(b,S.page)}${S.alive?`<span class="ai-tag">✨ 움직이는 그림 (예시)</span>`:""}</div>
     <div class="text">${esc(b.pages[S.page])}</div>
     <div class="dots">${b.pages.map((_,i)=>`<i class="${i===S.page?"on":""}"></i>`).join("")}</div>
+    <div class="srcs"><button class="chip" aria-pressed="${S.alive}" data-act="alive">✨ 움직이는 그림 ${S.alive?"켜짐":"(예시)"}</button></div>
     <div class="srcs" role="group" aria-label="목소리 고르기">${["녹음","기기 읽기","AI 목소리"].map(s=>`<button class="chip" aria-pressed="${S.src===s}" data-act="src" data-v="${s}" ${s==="AI 목소리"||!has.includes(s)?"disabled":""}>${s==="녹음"?"🎙 부모 녹음":s==="기기 읽기"?"🔊 기기 읽기":"✨ AI 목소리 (준비 중)"}</button>`).join("")}</div>
     <div class="ctrl"><button class="side" data-act="prev" aria-label="앞 페이지">⏮</button>
       <button class="main" data-act="pp" aria-label="${S.playing?"일시정지":"재생"}">${S.playing?"❚❚":"▶"}</button>
@@ -332,7 +412,7 @@ function reader(){
 }
 
 function render(){
-  const ph=$("#phone"), titles={shelf:"작은 도서관",lists:"플레이리스트",queue:"최근재생목록",settings:"설정"};
+  const ph=$("#phone");ph.className="phone"+(S.dev!=="phone"?" "+S.dev:"");const titles={shelf:"작은 도서관",lists:"플레이리스트",queue:"최근재생목록",settings:"설정"};
   const body={shelf,lists,queue,settings}[S.tab]();
   const b=book(S.queue[S.qi]);
   ph.innerHTML=`
@@ -346,7 +426,7 @@ function render(){
      <span class="bar"><i style="width:${S.prog}%"></i></span></button>`:""}
    <nav class="tabbar" role="tablist">${[["shelf","📚","책장"],["lists","🎵","플레이리스트"],["queue","🕘","최근재생목록"],["settings","⚙️","설정"]].map(([k,i,l])=>`
      <button class="tab" role="tab" aria-selected="${S.tab===k}" data-act="tab" data-v="${k}"><span class="i">${i}</span>${l}</button>`).join("")}</nav>
-   ${S.overlay?`<div class="full">${{author,voice,reader}[S.overlay]()}</div>`:""}
+   ${S.overlay?`<div class="full">${{author,voice,reader,watch}[S.overlay]()}</div>`:""}
    ${S.sheet||""}`;
   renderNotes();
   const q=$("#q"); if(q){q.oninput=e=>{S.q=e.target.value;const pos=e.target.selectionStart;render();const n=$("#q");n.focus();n.setSelectionRange(pos,pos)}}
@@ -367,6 +447,7 @@ function pickSrc(){const b=book(S.queue[S.qi]);S.src=b.tracks[0]||"기기 읽기
 function playIds(ids){S.queue=ids.filter(i=>book(i).pages.length);S.qi=0;S.page=0;S.prog=0;pickSrc();startPlay();S.overlay="reader";render()}
 
 document.addEventListener("click",e=>{
+  if(e.target.closest("[data-hold]"))return;
   const el=e.target.closest("[data-act]"); if(!el) return;
   if(el.dataset.act==="unsheet"&&e.target.closest("[data-stop]"))return;
   e.stopPropagation(); const v=el.dataset.v, a=el.dataset.act;
@@ -380,10 +461,21 @@ document.addEventListener("click",e=>{
     case"playseries":playIds(DB.books.filter(b=>b.series===v).sort((a,b)=>a.no-b.no).map(b=>b.id));return;
     case"playlist":playIds(DB.lists.find(l=>l.id==v).ids);return;
     case"reader":S.overlay="reader";break;
-    case"pp":S.playing?stopPlay():startPlay();break;
+    case"pp":if(S.overlay==="watch"&&S.watchLock)return;S.playing?stopPlay():startPlay();break;
     case"next":{const b=book(S.queue[S.qi]);S.prog=0;if(S.page<b.pages.length-1)S.page++;if(S.playing)startPlay();break}
     case"prev":S.prog=0;if(S.page>0)S.page--;if(S.playing)startPlay();break;
     case"src":S.src=v;if(S.playing)startPlay();break;
+    case"topicset":S.topic=v||null;break;
+    case"topic":{const p=tpath(v);sheet(`<h3>${TOPICS[v].e} ${esc(TOPICS[v].n)}</h3><p style="color:var(--ink2);margin:0 0 12px">${esc(p.map(t=>TOPICS[t].n).join(" › "))}</p>
+      <button class="opt" data-act="topicgo" data-v="${v}">📚 이 주제 책 보기 (${DB.books.filter(b=>inTopic(b,v)).length}권)</button>
+      ${p.length>1?`<button class="opt" data-act="topicgo" data-v="${p[0]}">${TOPICS[p[0]].e} ${esc(TOPICS[p[0]].n)} 전체 보기 (${DB.books.filter(b=>inTopic(b,p[0])).length}권)</button>`:""}`);return}
+    case"topicgo":S.topic=v;S.sheet=null;S.tab="shelf";S.overlay=null;break;
+    case"watch":S.overlay="watch";S.lockHint=false;if(!S.playing)startPlay();break;
+    case"watchlist":playIds(DB.lists.find(l=>l.id==v).ids);S.overlay="watch";render();return;
+    case"watchclose":S.overlay="reader";S.watchLock=false;break;
+    case"watchtap":if(S.watchLock){S.lockHint=true;render();clearTimeout(S.lh);S.lh=setTimeout(()=>{S.lockHint=false;render()},1800)}return;
+    case"alive":S.alive=!S.alive;break;
+    case"dev":S.dev=v;if(v!=="phone"&&S.queue.length){S.overlay="watch";if(!S.playing)startPlay()}break;
     case"close":if(S.overlay==="author"||S.overlay==="voice")stopPlay();S.overlay=null;break;
     case"qplay":S.qi=+v;S.page=0;S.prog=0;pickSrc();startPlay();S.overlay="reader";break;
     case"qremove":S.queue.splice(+v,1);if(S.qi>=S.queue.length)S.qi=Math.max(0,S.queue.length-1);if(!S.queue.length)stopPlay();break;
@@ -415,6 +507,11 @@ document.addEventListener("click",e=>{
   }
   render();
 });
+let holdT=null;
+document.addEventListener("pointerdown",e=>{const h=e.target.closest("[data-hold]");if(!h)return;e.preventDefault();
+  if(!S.watchLock){S.watchLock=true;S.lockHint=false;render();return}
+  h.classList.add("on");holdT=setTimeout(()=>{S.watchLock=false;S.lockHint=false;render();toast("잠금을 풀었어요")},1500)});
+["pointerup","pointerleave","pointercancel"].forEach(t=>document.addEventListener(t,()=>{clearTimeout(holdT);document.querySelectorAll(".hold.on").forEach(x=>x.classList.remove("on"))}));
 document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches("svg[data-act]")){e.preventDefault();e.target.dispatchEvent(new MouseEvent("click",{bubbles:true}))}});
 window.matchMedia("(max-width:820px)").addEventListener?.("change",renderNotes);
 render();
