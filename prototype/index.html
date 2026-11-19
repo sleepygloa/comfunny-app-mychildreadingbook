@@ -173,6 +173,13 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--primary);outlin
 .empty{color:var(--ink2);text-align:center;padding:30px 10px;line-height:1.6}
 .mode-btn{display:inline-flex;align-items:center;gap:4px;font-family:var(--font);font-size:24px;padding:4px 8px;margin-left:-8px;border-radius:14px}
 .mode-btn:hover{background:var(--chip)}
+.rooms{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:4px 0 6px}
+.room{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 4px 12px;border-radius:24px;background:var(--bg);border:2px solid transparent;min-width:0}
+.room .ic{width:84px;height:84px;max-width:100%;border-radius:28px;display:grid;place-items:center;font-size:48px;box-shadow:var(--shadow)}
+.room b{font-size:15px}
+.room span{font-size:12px;color:var(--ink2)}
+.room[aria-pressed="true"]{border-color:var(--primary);background:var(--chip)}
+.mode-btn .mi{font-size:26px}
 .mode-btn small{font-size:14px;color:var(--ink2)}
 .week{border-radius:24px;padding:16px;background:linear-gradient(135deg,var(--welcome-a),var(--list-a));margin-top:12px}
 .week h3{margin:2px 0 4px;font-family:var(--font);font-weight:400;font-size:21px}
@@ -237,9 +244,9 @@ const TOPICS={
   animal:{n:"동물",p:"sci",e:"🐸"}, insect:{n:"곤충",p:"animal",e:"🦋"}, season:{n:"계절",p:"sci",e:"🍂"}, space:{n:"우주",p:"sci",e:"🪐"},
   life:{n:"생활",p:null,e:"🏠"}, family:{n:"가족",p:"life",e:"👪"}, sleep:{n:"잠자리",p:"life",e:"🌙"},
 };
-const MODES={book:{n:"작은 도서관",e:"📚",unit:"권",shelf:"책장",hello:"오늘은 어떤 책을\n함께 읽을까요?",add:"책 만들기"},
-  music:{n:"작은 음악방",e:"🎵",unit:"곡",shelf:"노래장",hello:"오늘은 어떤 노래를\n함께 부를까요?",add:"노래 넣기"},
-  video:{n:"작은 영상관",e:"🎬",unit:"편",shelf:"영상장",hello:"오늘은 어떤 영상을\n함께 볼까요?",add:"영상 넣기"}};
+const MODES={book:{n:"작은 도서관",e:"📚",bg:"linear-gradient(160deg,#FFD7C2,#FFF0D6)",unit:"권",shelf:"책장",hello:"오늘은 어떤 책을\n함께 읽을까요?",add:"책 만들기"},
+  music:{n:"작은 음악방",e:"🎵",bg:"linear-gradient(160deg,#E3DAFF,#F4EFFF)",unit:"곡",shelf:"노래장",hello:"오늘은 어떤 노래를\n함께 부를까요?",add:"노래 넣기"},
+  video:{n:"작은 영상관",e:"🎬",bg:"linear-gradient(160deg,#CFE6F5,#EEF6FB)",unit:"편",shelf:"영상장",hello:"오늘은 어떤 영상을\n함께 볼까요?",add:"영상 넣기"}};
 const DB={
   books:[
     {id:1,pub:"햇살출판",series:"자연 관찰 전집",no:1,title:"개구리가 폴짝",topics:["animal"],pages:["연못에 개구리가 살아요.","개구리가 폴짝 뛰어요.","비가 오면 개굴개굴 노래해요."],tracks:["녹음","기기 읽기"],c:0},
@@ -515,7 +522,7 @@ function render(){
   const body={shelf,lists,curate,settings}[S.tab]();
   const b=book(S.queue[S.qi]);
   ph.innerHTML=`
-   <div class="appbar"><h1>${S.tab==="settings"?titles[S.tab]:`<button class="mode-btn" data-act="mode" aria-label="${MODES[S.mode].n}, 다른 방 고르기">${MODES[S.mode].n} <small>▾</small></button>`}</h1>
+   <div class="appbar"><h1>${S.tab==="settings"?titles[S.tab]:`<button class="mode-btn" data-act="mode" aria-label="${MODES[S.mode].n}, 다른 방 고르기"><span class="mi" aria-hidden="true">${MODES[S.mode].e}</span>${MODES[S.mode].n} <small>▾</small></button>`}</h1>
      <button class="icon-btn note-toggle" data-act="notes" aria-label="기획 메모 보기">📒</button>
      ${S.tab==="shelf"?`<button class="icon-btn" data-act="${S.mode==="book"?"new":"addmedia"}" aria-label="${MODES[S.mode].add}" style="background:var(--primary);color:var(--on-primary)">＋</button>`:""}</div>
    <div class="screen" id="scr">${body}</div>
@@ -571,7 +578,7 @@ document.addEventListener("click",e=>{
     case"colplay":{const ids=M().filter(COLS.find(c=>c.id===v).f).map(b=>b.id);if(!ids.length){toast("아직 책이 없어요");return}playIds(ids);return}
     case"colwatch":{const ids=M().filter(COLS.find(c=>c.id===v).f).map(b=>b.id);if(!ids.length){toast("아직 책이 없어요");return}playIds(ids);S.overlay="watch";render();return}
     case"queuepage":S.overlay="queuePage";break;
-    case"mode":sheet(`<h3>어느 방으로 갈까요?</h3>${Object.entries(MODES).map(([k,m])=>`<button class="opt" data-act="setmode" data-v="${k}" aria-pressed="${S.mode===k}">${m.e} ${m.n} <span style="margin-left:auto;color:var(--ink2);font-size:14px">${DB.books.filter(b=>kind(b)===k).length}${m.unit}${S.mode===k?" · 지금":""}</span></button>`).join("")}
+    case"mode":sheet(`<div class="rooms" role="group" aria-label="방 고르기">${Object.entries(MODES).map(([k,m])=>`<button class="room" data-act="setmode" data-v="${k}" aria-pressed="${S.mode===k}" aria-label="${m.n}${S.mode===k?", 지금 방":""}"><span class="ic" style="background:${m.bg}">${m.e}</span><b>${m.n.replace("작은 ","")}</b><span>${DB.books.filter(b=>kind(b)===k).length}${m.unit}</span></button>`).join("")}</div>
       <p style="color:var(--ink2);font-size:13px;margin:8px 6px 0">책장 · 플레이리스트 · 모아보기가 고른 방의 것으로 바뀌어요. 듣던 것은 계속 들려요.</p>`);return;
     case"setmode":S.mode=v;S.sheet=null;S.pub="전체";S.topic=null;S.q="";break;
     case"addmedia":toast(S.mode==="music"?"노래를 녹음하거나 파일을 가져와요 (예시)":"폰 앨범에서 영상을 가져와요 (예시)");return;
