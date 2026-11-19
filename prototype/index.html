@@ -70,7 +70,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--primary);outlin
 .buddy.wave{animation:wave .7s ease-out 1}
 @keyframes wave{30%{transform:rotate(-10deg) translateY(-4px)}60%{transform:rotate(8deg)}}
 @media (prefers-reduced-motion:reduce){.buddy.wave{animation:none}}
-.search{margin:14px 0 10px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:0 14px;height:48px}
+.search{margin:4px 0 10px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:0 14px;height:48px}
 .search input{border:0;background:transparent;flex:1;font:inherit;color:var(--ink);font-size:16px;min-width:0}
 .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px}
 .chip{flex:none;height:36px;padding:0 14px;border-radius:18px;background:var(--surface);border:1px solid var(--line);font-size:14px}
@@ -357,8 +357,7 @@ function shelf(){
   let bs=M().filter(b=>(S.pub==="전체"||(b.pub||"출판사 없음")===S.pub)&&inTopic(b,S.topic)&&(!S.q||b.title.includes(S.q)||b.series.includes(S.q)));
   const groups={};bs.forEach(b=>{const p=b.pub||"출판사 없음";(groups[p]??={});(groups[p][b.series]??=[]).push(b)});
   return `
-  <div class="welcome">${buddy}<div><h2>${MODES[S.mode].hello}</h2><p>${M().length}${U()}이 기다리고 있어요.</p></div></div>
-  <div class="search">🔍<input id="q" placeholder="책 제목이나 전집 찾기" value="${esc(S.q)}" aria-label="책 검색"></div>
+  <div class="search">🔍<input id="q" placeholder="${{book:"책 제목이나 전집 찾기",music:"노래 제목 찾기",video:"영상 제목 찾기"}[S.mode]}" value="${esc(S.q)}" aria-label="책 검색"></div>
   <div class="chips" role="group" aria-label="출판사">${pubs.map(p=>`<button class="chip" aria-pressed="${S.pub===p}" data-act="pub" data-v="${esc(p)}">${esc(p)}</button>`).join("")}</div>
   ${topicChips()}
   <div class="row-actions"><button class="btn primary" data-act="playall">▶ 전체 재생 (${bs.length}${U()})</button>
