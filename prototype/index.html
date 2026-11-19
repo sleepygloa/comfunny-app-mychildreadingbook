@@ -90,8 +90,12 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--primary);outlin
 .series-h .t{flex:1;font-weight:700}
 .series-h .c{color:var(--ink2);font-size:14px}
 .series-body{padding:0 12px 12px}
-.book{display:grid;grid-template-columns:56px minmax(0,1fr) 36px 36px 44px;align-items:center;column-gap:8px;height:88px;padding:0 2px;border-top:1px solid var(--line)}
+.book{display:grid;grid-template-columns:56px minmax(0,1fr) 36px 44px;align-items:center;column-gap:8px;height:88px;padding:0 2px;border-top:1px solid var(--line)}
 .book .cover{width:56px;height:72px}
+.cw{position:relative;width:56px;height:72px}
+.fav{position:absolute;right:-7px;bottom:-7px;width:30px;height:30px;display:grid;place-items:center}
+.fav i{width:22px;height:22px;border-radius:11px;background:var(--surface);box-shadow:0 1px 4px rgba(40,43,58,.25);display:grid;place-items:center;font-style:normal;font-size:13px;line-height:1;color:var(--ink2)}
+.fav.on i{color:#E0A100}
 .book .info{display:flex;align-items:center;gap:6px;color:var(--ink2);font-size:13px;margin-top:2px;white-space:nowrap;overflow:hidden}
 .book .info .v{letter-spacing:1px}
 .book .tracks{flex-wrap:nowrap;overflow:hidden;mask-image:linear-gradient(90deg,#000 85%,transparent);-webkit-mask-image:linear-gradient(90deg,#000 85%,transparent)}
@@ -376,10 +380,9 @@ function shelf(){
       <div class="series"><button class="series-h" data-act="toggle" data-v="${esc(s)}" aria-expanded="${S.open[s]!==false}">
         <span>📚</span><span class="t">${esc(s)}</span><span class="c">${list.length}권 ${S.open[s]!==false?"▾":"▸"}</span></button>
       ${S.open[s]!==false?`<div class="series-body">${list.sort((a,b)=>a.no-b.no).map(b=>`
-        <div class="book">${cover(b)}<div class="meta"><b>${b.no}. ${esc(b.title)}</b>
+        <div class="book"><div class="cw">${cover(b)}<button class="fav ${b.fav?"on":""}" data-act="fav" data-v="${b.id}" aria-label="${esc(b.title)} 즐겨찾기 ${b.fav?"빼기":"넣기"}"><i>${b.fav?"★":"☆"}</i></button></div><div class="meta"><b>${b.no}. ${esc(b.title)}</b>
           <div class="info"><span>${b.pages.length}${kind(b)==="book"?"쪽":"장면"}</span>${b.age?`<span>· 🎂 ${b.age[0]}~${b.age[1]}세</span>`:""}<span class="v" title="${esc(b.tracks.join(", ")||"목소리 없음")}" aria-label="목소리: ${esc(b.tracks.join(", ")||"없음")}">· ${b.tracks.length?b.tracks.map(t=>t==="녹음"?"🎙":"🔊").join(""):"🔇"}</span></div>
           <div class="tracks">${(b.topics||[]).map(tbadge).join("")}</div></div>
-          <button class="more" data-act="fav" data-v="${b.id}" aria-label="${esc(b.title)} 즐겨찾기 ${b.fav?"빼기":"넣기"}" style="color:${b.fav?"#E0A100":"var(--ink2)"}">${b.fav?"★":"☆"}</button>
           <button class="more" data-act="menu" data-v="${b.id}" aria-label="${esc(b.title)} 메뉴">⋮</button>
           <button class="play-sm" data-act="play" data-v="${b.id}" aria-label="${esc(b.title)} 재생">▶</button></div>`).join("")}
         <div class="row-actions" style="margin-bottom:0"><button class="btn soft" data-act="playseries" data-v="${esc(s)}">▶ 전집 재생</button><button class="btn soft" data-act="new">＋ 이 전집에 책 추가</button></div>
