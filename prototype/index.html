@@ -110,9 +110,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--primary);outlin
 .mini .bar{position:absolute;left:18px;right:18px;bottom:4px;height:3px;border-radius:2px;background:var(--line);overflow:hidden}
 .mini .bar i{display:block;height:100%;background:var(--primary);width:0}
 .list-card{background:var(--surface);border-radius:24px;box-shadow:var(--shadow);padding:14px 16px;margin-top:10px;display:flex;align-items:center;gap:12px}
-.list-card .meta{flex:1}
+.list-card .meta{flex:1;min-width:0}
 .list-card .meta span{color:var(--ink2);font-size:13px}
-.stack{display:flex}
+.stack{display:flex;flex:none}
 .stack .cover{width:34px;height:44px;margin-left:-12px;border:2px solid var(--surface)}
 .stack .cover:first-child{margin-left:0}
 .section-t{font-family:var(--font);font-size:20px;margin:18px 0 8px;font-weight:400}
@@ -235,7 +235,20 @@ const DB={
   lists:[{id:1,title:"잠들기 전에",ids:[4,5,1]},{id:2,title:"주말 아침",ids:[2,3]}],
   drafts:[{title:"제목 없는 책",pages:2}],
 };
-const S={tab:"shelf",pub:"전체",topic:null,dev:"phone",watchLock:false,alive:false,q:"",open:{"자연 관찰 전집":true,"잠자리 동화":true,"우리집 책":false},
+// 보호자가 직접 붙이는 태그: 맞는 나이(age 범위) · 누리과정 5영역(nuri) · 즐겨찾기(fav). 외부 추천 데이터 없음.
+const NURI=[["body","🤸","신체운동·건강"],["talk","💬","의사소통"],["social","🤝","사회관계"],["art","🎨","예술경험"],["nature","🌱","자연탐구"]];
+const META={1:{age:[4,6],nuri:["nature"],fav:true},2:{age:[5,7],nuri:["nature"]},3:{age:[5,7],nuri:["nature"]},4:{age:[3,5],nuri:["talk"],fav:true},
+  5:{age:[4,7],nuri:["talk","art"]},6:{age:[3,6],nuri:["social"],fav:true},7:{age:[6,7],nuri:["nature","body"]}};
+DB.books.forEach(b=>Object.assign(b,META[b.id]||{}));
+const ageOk=(b,a)=>b.age&&b.age[0]<=a&&a<=b.age[1];
+// 모아보기 = 태그 조건으로 저절로 채워지는 목록. 플레이리스트처럼 손으로 담지 않는다.
+const COLS=[
+  {id:"fav",e:"⭐",n:"즐겨찾기",d:"별표한 책",f:b=>b.fav},
+  {id:"sci",e:"🔬",n:"과학 몰아보기",d:"주제 › 과학 아래 모든 책",f:b=>inTopic(b,"sci")},
+  {id:"age7",e:"🎂",n:"7세 몰아보기",d:"7세에 맞는 책",f:b=>ageOk(b,7)},
+  ...NURI.map(([k,e,n])=>({id:"nuri-"+k,e,n:"누리과정 · "+n,d:"누리과정 "+n+" 영역",f:b=>(b.nuri||[]).includes(k),nuri:true})),
+];
+const S={tab:"shelf",pub:"전체",topic:null,dev:"phone",col:null,age:7,watchLock:false,alive:false,q:"",open:{"자연 관찰 전집":true,"잠자리 동화":true,"우리집 책":false},
   queue:[4,5,1],qi:0,page:0,playing:false,prog:0,src:"녹음",overlay:null,sheet:null,notesOpen:false,rec:{},
   draft:null};
 
@@ -255,6 +268,11 @@ const NOTES={
     items:[["ok","검색 · 출판사 배지 · 전집 펼치기"],["todo","주제 배지(과학 › 환경 › 대기오염) · 주제로 거르기 — 이번 시안"],["ok","재생 · 전집 재생 · 전체 재생"],["ok","＋ 로 책 만들기, 책 메뉴(목소리 넣기 · 편집 · 삭제)"],["ok","만들던 책(초안) 이어 만들기 · 버리기"],["todo","연령별 분류 — 3단계 이후"]]},
   lists:{t:"플레이리스트",d:"\"잠들기 전에\"처럼 책 묶음을 저장해 두고 한 번에 듣는다.",
     items:[["ok","만들기 · 이름 바꾸기 · 삭제(책은 그대로)"],["ok","책 담기 · 빼기 · 끌어서 순서 바꾸기"]]},
+  curate:{t:"모아보기",d:"책에 붙인 태그로 저절로 채워지는 목록. 플레이리스트는 손으로 담고, 모아보기는 조건으로 모인다.",
+    items:[["todo","⭐ 즐겨찾기 · 🔬 과학 몰아보기 · 🎂 7세 몰아보기 — 이번 시안"],["todo","🌱 누리과정 5영역 — 보호자가 책마다 영역을 고름(외부 추천 아님)"],["todo","＋ 모아보기 만들기 — 주제 · 나이 · 영역 조건 조합"],["todo","책마다 맞는 나이(예: 5~7세) 태그 — M2b 연령 분류"]]},
+  queuePage:{t:"최근재생목록",d:"설정 › 듣기, 책 읽기 화면의 ≡ 로 들어온다. 하단 탭에서는 뺐다.",
+    items:[["ok","순서 바꾸기 · 빼기 · 비우기"],["ok","저장한 플레이리스트와 따로 움직임"],["todo","탭에서 설정 안으로 옮김 — 이번 시안"]]},
+  col:{t:"모아보기 상세",d:"모음에 든 책을 보고 전체 재생하거나 영상처럼 볼 수 있다.",items:[["todo","전체 재생 · 영상처럼 보기 · 책별 재생"]]},
   queue:{t:"최근재생목록",d:"지금 듣는 순서. 앱을 다시 켜도 남아 있지만 저절로 재생되지는 않는다.",
     items:[["ok","순서 바꾸기 · 빼기 · 비우기"],["ok","저장한 플레이리스트와 따로 움직임"],["warn","잠금화면 · 알림 조작 — 실제 폰 확인 남음"]]},
   settings:{t:"설정 · 백업",d:"사진과 목소리를 한 파일(.mcrb)로 내 기기에 보관한다. 인터넷으로 보내지 않는다.",
@@ -310,7 +328,8 @@ function shelf(){
         <span>📚</span><span class="t">${esc(s)}</span><span class="c">${list.length}권 ${S.open[s]?"▾":"▸"}</span></button>
       ${S.open[s]?`<div class="series-body">${list.sort((a,b)=>a.no-b.no).map(b=>`
         <div class="book">${cover(b)}<div class="meta"><b>${b.no}. ${esc(b.title)}</b><span>${b.pages.length}쪽</span>
-          <div class="tracks">${(b.topics||[]).map(tbadge).join("")}${b.tracks.length?b.tracks.map(t=>`<span class="tk">${t==="녹음"?"🎙 녹음":"🔊 기기 읽기"}</span>`).join(""):`<span class="tk">목소리 없음</span>`}</div></div>
+          <div class="tracks">${b.age?`<span class="tk">🎂 ${b.age[0]}~${b.age[1]}세</span>`:""}${(b.topics||[]).map(tbadge).join("")}${b.tracks.length?b.tracks.map(t=>`<span class="tk">${t==="녹음"?"🎙 녹음":"🔊 기기 읽기"}</span>`).join(""):`<span class="tk">목소리 없음</span>`}</div></div>
+          <button class="more" data-act="fav" data-v="${b.id}" aria-label="${esc(b.title)} 즐겨찾기 ${b.fav?"빼기":"넣기"}" style="color:${b.fav?"#E0A100":"var(--ink2)"}">${b.fav?"★":"☆"}</button>
           <button class="more" data-act="menu" data-v="${b.id}" aria-label="${esc(b.title)} 메뉴">⋮</button>
           <button class="play-sm" data-act="play" data-v="${b.id}" aria-label="${esc(b.title)} 재생">▶</button></div>`).join("")}
         <div class="row-actions" style="margin-bottom:0"><button class="btn soft" data-act="playseries" data-v="${esc(s)}">▶ 전집 재생</button><button class="btn soft" data-act="new">＋ 이 전집에 책 추가</button></div>
@@ -323,6 +342,30 @@ function lists(){
     <button class="more" data-act="watchlist" data-v="${l.id}" aria-label="${esc(l.title)} 영상처럼 보기" style="font-size:22px">📺</button>
     <button class="play-sm" data-act="playlist" data-v="${l.id}" aria-label="${esc(l.title)} 전체 재생">▶</button></div>`).join("")}
   <div class="row-actions"><button class="btn soft" data-act="toast" data-v="새 플레이리스트를 만들어요 (예시)">＋ 새 플레이리스트</button></div>`;
+}
+function curate(){
+  const card=c=>{const bs=DB.books.filter(c.f);return `<div class="list-card"><div class="stack">${bs.slice(0,3).map(cover).join("")||`<div class="cover" style="background:var(--chip)">${c.e}</div>`}</div>
+    <button class="meta" data-act="col" data-v="${c.id}" style="text-align:left"><b>${c.e} ${esc(c.n)}</b><br><span>${bs.length}권 · ${esc(c.d)}</span></button>
+    <button class="more" data-act="colwatch" data-v="${c.id}" aria-label="${esc(c.n)} 영상처럼 보기" style="font-size:22px">📺</button>
+    <button class="play-sm" data-act="colplay" data-v="${c.id}" aria-label="${esc(c.n)} 전체 재생">▶</button></div>`};
+  return `<div class="welcome list">${buddy}<div><h2>골라 놓은 책을\n한 번에 들어요</h2><p>책에 붙인 별 · 주제 · 나이 · 누리과정으로 저절로 모여요.</p></div></div>
+  ${COLS.filter(c=>!c.nuri).map(card).join("")}
+  <h2 class="section-t">누리과정 5영역</h2>
+  ${COLS.filter(c=>c.nuri).map(card).join("")}
+  <div class="row-actions"><button class="btn soft" data-act="toast" data-v="주제 · 나이 · 누리과정을 골라 새 모아보기를 만들어요 (예시)">＋ 모아보기 만들기</button></div>`;
+}
+function col(){
+  const c=COLS.find(x=>x.id===S.col), bs=DB.books.filter(c.f);
+  return `<div class="appbar"><button class="icon-btn" data-act="close" aria-label="뒤로">←</button><h1 style="font-size:20px">${c.e} ${esc(c.n)}</h1></div>
+  <div class="screen" style="padding-bottom:30px"><p style="margin:0 0 10px;color:var(--ink2)">${esc(c.d)} · ${bs.length}권</p>
+  <div class="row-actions"><button class="btn primary" data-act="colplay" data-v="${c.id}">▶ 전체 재생</button><button class="btn soft" data-act="colwatch" data-v="${c.id}">📺 영상처럼 보기</button></div>
+  ${bs.length?bs.map(b=>`<div class="q-item">${cover(b)}<div class="meta" style="flex:1;min-width:0"><b>${esc(b.title)}</b><br><span style="color:var(--ink2);font-size:13px">${esc(b.series)} · ${b.age?b.age[0]+"~"+b.age[1]+"세":""}</span></div>
+    <button class="play-sm" data-act="play" data-v="${b.id}" aria-label="${esc(b.title)} 재생">▶</button></div>`).join(""):`<div class="empty">아직 이 모아보기에 맞는 책이 없어요.<br>책장의 ☆ 나 책 메뉴에서 태그를 붙여 주세요.</div>`}
+  </div>`;
+}
+function queuePage(){
+  return `<div class="appbar"><button class="icon-btn" data-act="close" aria-label="뒤로">←</button><h1 style="font-size:20px">최근재생목록</h1></div>
+  <div class="screen" style="padding-bottom:30px">${queue()}</div>`;
 }
 function queue(){
   if(!S.queue.length) return `<div class="empty">최근재생목록이 비어 있어요.<br>책장에서 ▶ 를 눌러 보세요.</div>`;
@@ -356,6 +399,8 @@ function settings(){
     <div class="set-row"><span>🔎</span><div class="t">백업 파일 검사<small>현재 책장은 바뀌지 않아요</small></div><button class="btn soft" data-act="toast" data-v="백업 파일에 문제가 없어요 · 책 6권 (예시)">검사</button></div>
     <div class="set-row"><span>♻️</span><div class="t">백업으로 책장 복원<small>현재 책장 전체를 바꿔요 (합치기 아님)</small></div><button class="btn soft" data-act="restore">복원</button></div>
     <div class="warnbox">백업 파일에는 가족의 사진과 목소리가 포함돼요. 암호화되지 않으니 개인 저장소에 보관해 주세요.</div></div>
+  <div class="set-card"><h3>듣기</h3>
+    <div class="set-row"><span>🕘</span><div class="t">최근재생목록<small>지금 듣는 순서 ${S.queue.length}권 · 순서 바꾸기 · 비우기</small></div><button class="btn soft" data-act="queuepage">열기</button></div></div>
   <div class="set-card"><h3>가족 계정 <span class="st todo">계획</span></h3>
     <p>로그인하면 우리 가족이 만든 책만 보여요. 다른 가족과 나누지 않고, 내보내기·화면 녹화는 막아요.</p>
     <div class="set-row"><span>👤</span><div class="t">Google 로 로그인<small>여러 기기(폰·태블릿·TV)에서 같은 책장</small></div><button class="btn soft" data-act="toast" data-v="로그인은 아직 계획 단계예요 (M2c)">로그인</button></div>
@@ -398,7 +443,7 @@ function voice(){
 function reader(){
   const b=book(S.queue[S.qi]); if(!b) return "";
   const has=b.tracks;
-  return `<div class="appbar"><button class="icon-btn" data-act="close" aria-label="닫기">⌄</button><h1 style="font-size:20px">${esc(b.title)}</h1><button class="icon-btn" data-act="watch" aria-label="영상처럼 보기">📺</button><button class="icon-btn" data-act="tab" data-v="queue" aria-label="최근재생목록">≡</button></div>
+  return `<div class="appbar"><button class="icon-btn" data-act="close" aria-label="닫기">⌄</button><h1 style="font-size:20px">${esc(b.title)}</h1><button class="icon-btn" data-act="watch" aria-label="영상처럼 보기">📺</button><button class="icon-btn" data-act="queuepage" aria-label="최근재생목록">≡</button></div>
   <div class="reader"><div style="position:relative;overflow:hidden;border-radius:20px" class="${S.alive?"alive":""}">${spread(b,S.page)}${S.alive?`<span class="ai-tag">✨ 움직이는 그림 (예시)</span>`:""}</div>
     <div class="text">${esc(b.pages[S.page])}</div>
     <div class="dots">${b.pages.map((_,i)=>`<i class="${i===S.page?"on":""}"></i>`).join("")}</div>
@@ -412,8 +457,8 @@ function reader(){
 }
 
 function render(){
-  const ph=$("#phone");ph.className="phone"+(S.dev!=="phone"?" "+S.dev:"");const titles={shelf:"작은 도서관",lists:"플레이리스트",queue:"최근재생목록",settings:"설정"};
-  const body={shelf,lists,queue,settings}[S.tab]();
+  const ph=$("#phone");ph.className="phone"+(S.dev!=="phone"?" "+S.dev:"");const titles={shelf:"작은 도서관",lists:"플레이리스트",curate:"모아보기",settings:"설정"};
+  const body={shelf,lists,curate,settings}[S.tab]();
   const b=book(S.queue[S.qi]);
   ph.innerHTML=`
    <div class="appbar"><h1>${titles[S.tab]}</h1>
@@ -424,9 +469,9 @@ function render(){
      <div class="meta"><b>${esc(b.title)}</b><span>${S.page+1} / ${b.pages.length}쪽 · ${S.playing?"재생 중":"눌러서 이어 듣기"}</span></div>
      <span class="play-sm" data-act="pp" role="button" aria-label="${S.playing?"일시정지":"재생"}">${S.playing?"❚❚":"▶"}</span>
      <span class="bar"><i style="width:${S.prog}%"></i></span></button>`:""}
-   <nav class="tabbar" role="tablist">${[["shelf","📚","책장"],["lists","🎵","플레이리스트"],["queue","🕘","최근재생목록"],["settings","⚙️","설정"]].map(([k,i,l])=>`
+   <nav class="tabbar" role="tablist">${[["shelf","📚","책장"],["lists","🎵","플레이리스트"],["curate","🧺","모아보기"],["settings","⚙️","설정"]].map(([k,i,l])=>`
      <button class="tab" role="tab" aria-selected="${S.tab===k}" data-act="tab" data-v="${k}"><span class="i">${i}</span>${l}</button>`).join("")}</nav>
-   ${S.overlay?`<div class="full">${{author,voice,reader,watch}[S.overlay]()}</div>`:""}
+   ${S.overlay?`<div class="full">${{author,voice,reader,watch,col,queuePage}[S.overlay]()}</div>`:""}
    ${S.sheet||""}`;
   renderNotes();
   const q=$("#q"); if(q){q.oninput=e=>{S.q=e.target.value;const pos=e.target.selectionStart;render();const n=$("#q");n.focus();n.setSelectionRange(pos,pos)}}
@@ -466,6 +511,11 @@ document.addEventListener("click",e=>{
     case"prev":S.prog=0;if(S.page>0)S.page--;if(S.playing)startPlay();break;
     case"src":S.src=v;if(S.playing)startPlay();break;
     case"topicset":S.topic=v||null;break;
+    case"fav":{const b=book(+v);b.fav=!b.fav;toast(b.fav?"즐겨찾기에 넣었어요":"즐겨찾기에서 뺐어요");break}
+    case"col":S.col=v;S.overlay="col";break;
+    case"colplay":{const ids=DB.books.filter(COLS.find(c=>c.id===v).f).map(b=>b.id);if(!ids.length){toast("아직 책이 없어요");return}playIds(ids);return}
+    case"colwatch":{const ids=DB.books.filter(COLS.find(c=>c.id===v).f).map(b=>b.id);if(!ids.length){toast("아직 책이 없어요");return}playIds(ids);S.overlay="watch";render();return}
+    case"queuepage":S.overlay="queuePage";break;
     case"topic":{const p=tpath(v);sheet(`<h3>${TOPICS[v].e} ${esc(TOPICS[v].n)}</h3><p style="color:var(--ink2);margin:0 0 12px">${esc(p.map(t=>TOPICS[t].n).join(" › "))}</p>
       <button class="opt" data-act="topicgo" data-v="${v}">📚 이 주제 책 보기 (${DB.books.filter(b=>inTopic(b,v)).length}권)</button>
       ${p.length>1?`<button class="opt" data-act="topicgo" data-v="${p[0]}">${TOPICS[p[0]].e} ${esc(TOPICS[p[0]].n)} 전체 보기 (${DB.books.filter(b=>inTopic(b,p[0])).length}권)</button>`:""}`);return}
