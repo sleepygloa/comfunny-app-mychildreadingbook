@@ -71,6 +71,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--primary);outlin
 @keyframes wave{30%{transform:rotate(-10deg) translateY(-4px)}60%{transform:rotate(8deg)}}
 @media (prefers-reduced-motion:reduce){.buddy.wave{animation:none}}
 .search{margin:4px 0 10px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:0 14px;height:48px}
+.filt-btn{width:40px;height:40px;border-radius:20px;color:var(--ink2);font-size:18px;flex:none}
+.filt{background:var(--surface);border-radius:22px;padding:10px 12px;margin-bottom:6px;box-shadow:var(--shadow)}
 .search input{border:0;background:transparent;flex:1;font:inherit;color:var(--ink);font-size:16px;min-width:0}
 .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px}
 .chip{flex:none;height:36px;padding:0 14px;border-radius:18px;background:var(--surface);border:1px solid var(--line);font-size:14px}
@@ -357,9 +359,10 @@ function shelf(){
   let bs=M().filter(b=>(S.pub==="전체"||(b.pub||"출판사 없음")===S.pub)&&inTopic(b,S.topic)&&(!S.q||b.title.includes(S.q)||b.series.includes(S.q)));
   const groups={};bs.forEach(b=>{const p=b.pub||"출판사 없음";(groups[p]??={});(groups[p][b.series]??=[]).push(b)});
   return `
-  <div class="search">🔍<input id="q" placeholder="${{book:"책 제목이나 전집 찾기",music:"노래 제목 찾기",video:"영상 제목 찾기"}[S.mode]}" value="${esc(S.q)}" aria-label="책 검색"></div>
-  <div class="chips" role="group" aria-label="출판사">${pubs.map(p=>`<button class="chip" aria-pressed="${S.pub===p}" data-act="pub" data-v="${esc(p)}">${esc(p)}</button>`).join("")}</div>
-  ${topicChips()}
+  <div class="search">🔍<input id="q" placeholder="${{book:"책 제목이나 전집 찾기",music:"노래 제목 찾기",video:"영상 제목 찾기"}[S.mode]}" value="${esc(S.q)}" aria-label="책 검색"><button class="filt-btn" data-act="filt" aria-expanded="${!!S.filt}" aria-label="출판사 · 주제로 거르기">${S.filt?"▴":"⚙︎"}</button></div>
+  ${S.filt?`<div class="filt"><div class="chips" role="group" aria-label="출판사"><span class="chip-lbl">출판사</span>${pubs.map(p=>`<button class="chip" aria-pressed="${S.pub===p}" data-act="pub" data-v="${esc(p)}">${esc(p)}</button>`).join("")}</div>
+  ${topicChips()}<button class="btn soft" data-act="filt" style="width:100%;min-height:40px;margin-top:4px">접기 ▴</button></div>`
+  :(S.pub!=="전체"||S.topic)?`<div class="chips"><button class="chip" aria-pressed="true" data-act="filtclear">${esc([S.pub!=="전체"?S.pub:"",S.topic?TOPICS[S.topic].e+" "+TOPICS[S.topic].n:""].filter(Boolean).join(" · "))} ✕</button></div>`:""}
   <div class="row-actions"><button class="btn primary" data-act="playall">▶ 전체 재생 (${bs.length}${U()})</button>
     <button class="btn soft" data-act="drafts">만들던 책 (${DB.drafts.length})</button></div>
   ${bs.length?Object.entries(groups).map(([p,ss])=>`
@@ -535,7 +538,7 @@ function render(){
    ${S.sheet||""}
    ${S.notif?`<button class="notif" data-act="notifopen"><span style="font-size:22px">🔔</span><span><b>이번 주 누리과정 · 겨울 준비하는 동물</b><small>작은 도서관 · 지금</small>우리 책장에 맞는 책 ${DB.books.filter(COLS[0].f).length}권이 있어요. 눌러서 들어요</span></button>`:""}`;
   renderNotes();
-  const q=$("#q"); if(q){q.oninput=e=>{S.q=e.target.value;const pos=e.target.selectionStart;render();const n=$("#q");n.focus();n.setSelectionRange(pos,pos)}}
+  const q=$("#q"); if(q){q.onfocus=()=>{if(!S.filt){S.filt=true;render();const n=$("#q");n.focus()}};q.oninput=e=>{S.q=e.target.value;const pos=e.target.selectionStart;render();const n=$("#q");n.focus();n.setSelectionRange(pos,pos)}}
   ph.querySelectorAll("[data-in]").forEach(el=>el.oninput=e=>{S.draft[el.dataset.in]=e.target.value;S.draft.saved=false;$(".saving").textContent="저장하는 중…";clearTimeout(S.t9);S.t9=setTimeout(()=>{S.draft.saved=true;const s=$(".saving");if(s)s.textContent="✓ 작성 내용이 자동 보관돼요"},900)});
 }
 function toast(m){const t=document.createElement("div");t.className="toast";t.textContent=m;$("#phone").appendChild(t);setTimeout(()=>t.remove(),2200)}
@@ -560,6 +563,8 @@ document.addEventListener("click",e=>{
   switch(a){
     case"tab":S.tab=v;S.overlay=null;break;
     case"pub":S.pub=v;break;
+    case"filt":S.filt=!S.filt;break;
+    case"filtclear":S.pub="전체";S.topic=null;break;
     case"toggle":S.open[v]=S.open[v]===false;break;
     case"wave":el.classList.remove("wave");void el.getBoundingClientRect();el.classList.add("wave");return;
     case"play":playIds([+v]);return;
