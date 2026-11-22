@@ -81,7 +81,7 @@ void main() {
     await settle(tester);
     expect(fake.calls, 1);
     final page = vm.draft!.content.orderedPages.single;
-    expect(page.text, '옛날 옛날에\n작은 곰이 살았어요.');
+    expect(page.text, '옛날 옛날에 작은 곰이 살았어요.');
     expect(find.byKey(ValueKey('big-text-${page.id}')), findsOneWidget);
     expect(find.text('큰 글씨 접기'), findsOneWidget);
     await tester.tap(find.text('큰 글씨 접기'));
@@ -126,6 +126,34 @@ void main() {
     await settle(tester);
     expect(fake.calls, 1);
     expect(find.textContaining('글자 뽑기를 쓸 수 없어요'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    await settle(tester);
+  });
+
+  testWidgets('긴 글은 큰 글씨 칸 안에서만 스크롤하고 칸에서 바로 고친다', (tester) async {
+    final vm = await pumpVoice(tester);
+    fake.result = List.filled(40, '작은 곰이 숲속 길을 따라 걸었어요.').join('\n\n');
+    await tester.tap(find.text('사진에서 글자 뽑기'));
+    await settle(tester);
+    final id = vm.draft!.content.orderedPages.single.id;
+    final box = find.byKey(ValueKey('big-text-$id'));
+    // 칸 높이는 글 길이와 무관하게 고정 상한(220) + 고치기 버튼 줄
+    expect(tester.getSize(box).height, lessThan(300));
+    // 녹음 버튼은 칸 위에 있다 — 글이 길어도 밀려나지 않는다
+    expect(
+      tester.getTopLeft(find.text('녹음')).dy,
+      lessThan(tester.getTopLeft(box).dy),
+    );
+    await tester.tap(find.text('글 고치기'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('edit-text-field')),
+      ' 고친 글 ',
+    );
+    await tester.tap(find.text('고친 글 쓰기'));
+    await settle(tester);
+    expect(vm.draft!.content.orderedPages.single.text, '고친 글');
+    expect(find.text('고친 글'), findsWidgets);
     await tester.pumpWidget(const SizedBox());
     await settle(tester);
   });
