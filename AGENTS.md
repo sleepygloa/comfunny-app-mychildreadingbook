@@ -44,7 +44,7 @@ flutter build apk --debug  # 기대: ✓ Built build/app/outputs/flutter-apk/app
 | **상태관리 = `provider`** | `ChangeNotifier` + `MultiProvider`. 화면당 VM 1개. 저장소·서비스는 `get_it` | `[B-02]` `[현행]` 표준. **Riverpod 금지** — 과거 설계였으나 `[확장]` 항목이다 (ADR-2) |
 | **기기 밖으로 보내지 않는다** | 네트워크·클라우드 기능을 넣으려면 먼저 ADR 로 결정한다(`INTERNET` 권한 추가 = 설계 변경) | 아동 사진·부모 목소리다 `[A-06-7]` (ADR-1) |
 | **OS 클라우드 백업 차단 유지** | Android `allowBackup=false`·`dataExtractionRules`, iOS `AppDelegate.swift` 의 `isExcludedFromBackup` 을 지우지 않는다 | 2026-10-06 오너 결정 (ADR-11) |
-| **클라우드 AI 금지** | 책 본문·목소리를 외부 AI·TTS 서비스로 보내지 않는다. AI 합성은 **로컬에서만** | 아동 앱이다. `[A-06-7]` 은 TTS 를 조건부 허용하지만 오너가 배제를 택했다 (ADR-4) |
+| **클라우드 AI 금지 (예외 1개)** | 책 본문·목소리·아이 사진을 외부 AI·TTS 서비스로 보내지 않는다. **예외: "움직이는 그림" 을 위한 책 페이지 사진만** 서버를 거쳐 외부 AI 로 보낼 수 있다(ADR-15) | 아동 앱이다. `[A-06-7]` 은 TTS 를 조건부 허용하지만 오너가 배제를 택했다 (ADR-4). 책 그림 영상화는 기기에서 불가능해 2026-11-19 오너가 허용 |
 | **AI 는 M3** | M1·M2 에 AI 를 넣지 않는다. M3 는 GATE + 처리자 재설계 후 | `[A-22 §6]` — 데이터 구조가 흔들리는 중에 음원을 만들면 전부 무효가 된다 (ADR-3) |
 | **`AudioSource` 4종 선정의** | `deviceTts`·`parentRecording`·`aiClonedVoice`·`aiNarration`. 구현은 단계별 | 나중에 값 추가 = 포맷 마이그레이션 (ADR-6) |
 | **`schemaVersion` 필수** | 모든 JSON 은 `{schemaVersion, data}` 봉투(현재 1). 미래 버전은 읽지도 덮어쓰지도 않는다 | 다운그레이드 시 데이터 유실 방지 |
