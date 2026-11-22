@@ -23,6 +23,8 @@ import 'data/repositories/watch_settings_repository_impl.dart';
 import 'data/repositories/reading_workspace_repositories.dart';
 import 'data/services/device_tts_service.dart';
 import 'data/services/recording_service.dart';
+import 'data/services/mlkit_text_extractor.dart';
+import 'domain/services/text_extractor.dart';
 import 'domain/repositories/reading_workspace_repositories.dart';
 import 'domain/repositories/repositories.dart';
 
@@ -148,6 +150,11 @@ Future<void> registerWith(Directory baseDir) async {
     ..registerLazySingleton<RecordingService>(
       () => RecordingService(),
       dispose: (service) => service.dispose(),
+    )
+    // 사진에서 글자 뽑기 — 기기 안 모델만 쓴다 [A-06-7]. 테스트는 가짜로 갈아끼운다.
+    ..registerLazySingleton<TextExtractor>(
+      () => MlKitTextExtractor(),
+      dispose: (extractor) => extractor.dispose(),
     );
 }
 

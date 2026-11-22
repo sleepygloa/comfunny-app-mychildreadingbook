@@ -47,3 +47,10 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // 사진에서 글자 뽑기 — 한국어 글자 모델을 앱 안에 묶는다(번들형).
+    // 왜 번들형인가: Play 서비스형은 모델을 처음 쓸 때 내려받는다. 이 앱은 INTERNET 권한이 없어
+    // 내려받을 수 없고, 아이 책 사진을 기기 밖으로 보내지 않는다 [A-06-7] (2026-11-22).
+    implementation("com.google.mlkit:text-recognition-korean:16.0.1")
+}

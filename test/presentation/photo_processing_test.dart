@@ -105,4 +105,58 @@ void main() {
       await dir.delete(recursive: true);
     }
   });
+
+  group('글자 또렷하게', () {
+    // 합성 쪽: 왼쪽은 그늘(종이 150), 오른쪽은 밝음(종이 245). 양쪽에 같은 진하기의 글자 줄.
+    Uint8List page(int w, int h) {
+      final px = Uint8List(w * h * 4);
+      for (var y = 0; y < h; y++) {
+        for (var x = 0; x < w; x++) {
+          final paper = 150 + 95 * x / (w - 1);
+          final text = y % 20 < 3 && x % 7 < 4;
+          final v = (text ? paper * .45 : paper).round();
+          final o = (y * w + x) * 4;
+          px[o] = px[o + 1] = px[o + 2] = v;
+          px[o + 3] = 255;
+        }
+      }
+      return px;
+    }
+
+    int at(Uint8List px, int w, int x, int y) => px[(y * w + x) * 4];
+
+    test('그늘진 종이와 밝은 종이를 비슷하게 맞추고 글자는 더 진하게 한다', () {
+      const w = 320, h = 200;
+      final before = page(w, h);
+      final after = PhotoProcessing.clarifyText(before, w, h);
+      // 종이: 왼쪽 그늘(y=10, 글자 없음)과 오른쪽 밝은 곳의 차이가 줄어든다.
+      final gapBefore = (at(before, w, 310, 10) - at(before, w, 10, 10)).abs();
+      final gapAfter = (at(after, w, 310, 10) - at(after, w, 10, 10)).abs();
+      expect(gapAfter, lessThan(gapBefore ~/ 3));
+      // 그늘 속 글자와 종이의 대비가 커진다.
+      final contrastBefore = at(before, w, 10, 10) - at(before, w, 0, 0);
+      final contrastAfter = at(after, w, 10, 10) - at(after, w, 0, 0);
+      expect(contrastAfter, greaterThan(contrastBefore));
+      // 원본 바이트는 그대로다.
+      expect(before, page(w, h));
+    });
+
+    test('반사 비율은 하얗게 날아간 픽셀 비율이고, 잘못된 크기는 거절한다', () {
+      final white = Uint8List(64 * 64 * 4)..fillRange(0, 64 * 64 * 4, 255);
+      expect(PhotoProcessing.glareRatio(white), 1);
+      expect(PhotoProcessing.glareRatio(page(64, 64)), 0);
+      expect(
+        () => PhotoProcessing.clarifyText(Uint8List(10), 64, 64),
+        throwsFormatException,
+      );
+    });
+
+    test('이미지로 돌려 같은 크기의 새 이미지를 만든다', () async {
+      final image = await samplePhoto();
+      final clear = await PhotoProcessing.clarified(image);
+      expect((clear.width, clear.height), (image.width, image.height));
+      clear.dispose();
+      image.dispose();
+    });
+  });
 }

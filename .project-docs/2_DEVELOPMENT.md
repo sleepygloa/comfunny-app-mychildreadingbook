@@ -84,6 +84,7 @@ flutter build apk --debug && mkdir -p apk && cp build/app/outputs/flutter-apk/ap
 | `camera ^0.12.1` | 표지·본문 촬영 | BSD-3-Clause |
 | `audio_service 0.18.19` | OS 미디어 세션·Android 전경 서비스·알림/잠금화면 | MIT |
 | `audio_session 0.2.4` | 오디오 포커스·통화/이어폰 분리 감지 | MIT |
+| `google_mlkit_text_recognition ^1.0.3` | 사진에서 글자 뽑기(기기 안). Android 는 `com.google.mlkit:text-recognition-korean:16.0.1` 번들 모델을 `android/app/build.gradle.kts` 에 함께 넣는다 | 플러그인 MIT · ML Kit 은 [ML Kit 약관](https://developers.google.com/ml-kit/terms)(무료, 비용 0) |
 | `flutter_lints ^6.0.0` (dev) | 린트 | BSD-3-Clause |
 
 - **2026-10-06 제거:** `cupertino_icons`(쓰는 곳 없음 — Material 아이콘만 쓴다).
@@ -222,6 +223,8 @@ iOS 는 Flutter 엔진보다 먼저 `AppDelegate.application(_:didFinishLaunchin
 | `E-MCR-500` | 파일 IO·직렬화 실패 |
 | `E-MCR-510` | 백업 형식·무결성·경로·상한 오류 |
 | `E-MCR-511` | 저장 중 작업(임시 파일·원본 변화)이 있어 백업 불가 |
+| `E-MCR-520` | 영상처럼 보기 화면 보호 전환 실패(기록만) |
+| `E-MCR-530` | 사진에서 글자 뽑기 실패 — 글은 그대로, 직접 적기 안내 |
 
 > `E-MCR-503`(워커 응답 없음)은 2026-10-06 삭제 — 처리자가 정해지면 M3 에서 다시 정의한다.
 
