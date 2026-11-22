@@ -309,7 +309,12 @@ class AuthoringViewModel extends ChangeNotifier {
     });
   }
 
-  Future<void> attachRecording(String pageId, String path) async {
+  /// [durationMs] 는 녹음한 시간. 내 목소리 자료의 분량을 세는 데 쓴다(2026-11-22).
+  Future<void> attachRecording(
+    String pageId,
+    String path, {
+    int? durationMs,
+  }) async {
     await _run(() async {
       final current = draft;
       if (current == null) return;
@@ -318,6 +323,7 @@ class AuthoringViewModel extends ChangeNotifier {
         id: const Uuid().v4(),
         source: AudioSource.parentRecording,
         path: relative,
+        durationMs: durationMs,
         createdAt: DateTime.now(),
       );
       draft = current.copyWith(
