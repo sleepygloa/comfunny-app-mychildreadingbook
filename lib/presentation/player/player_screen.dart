@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/local/media_storage.dart';
@@ -80,6 +81,13 @@ class _PlayerScreenState extends State<PlayerScreen>
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
+          // 차 · 태블릿 · TV 에서 가로 큰 화면으로 본다. 재생 큐가 있어야 다음 책으로 이어진다.
+          if (widget.managedByQueue)
+            IconButton(
+              tooltip: '영상처럼 보기',
+              icon: const Icon(Icons.smart_display_outlined),
+              onPressed: () => context.push('/watch'),
+            ),
           if (vm.availableSources.length > 1) _SourceMenu(vm: vm),
           _RepeatButton(vm: vm),
         ],
@@ -155,17 +163,24 @@ class _PageView extends StatelessWidget {
         }
       },
       child: Center(
-        child: _PageImage(contentId: vm.content.id, page: page),
+        child: PageImage(contentId: vm.content.id, page: page),
       ),
     );
   }
 }
 
-class _PageImage extends StatelessWidget {
-  const _PageImage({required this.contentId, required this.page});
+/// 페이지 그림 하나. 영상처럼 보기([WatchScreen])도 같은 그림을 쓴다.
+class PageImage extends StatelessWidget {
+  const PageImage({
+    super.key,
+    required this.contentId,
+    required this.page,
+    this.zoomable = true,
+  });
 
   final String contentId;
   final BookPage page;
+  final bool zoomable;
 
   @override
   Widget build(BuildContext context) {
@@ -194,18 +209,21 @@ class _PageImage extends StatelessWidget {
       );
     }
 
+    final image = Image.file(
+      file,
+      fit: BoxFit.contain,
+      errorBuilder: (_, _, _) => const Icon(
+        Icons.broken_image_outlined,
+        size: 64,
+        color: Color(0xFF929BAD),
+      ),
+    );
+    // 영상처럼 보기에서는 확대를 끈다 — 손이 닿을 때마다 그림이 움직이면 차에서 보기 어렵다.
+    if (!zoomable) return image;
     return InteractiveViewer(
       // 아이가 그림을 확대해 볼 수 있게.
       maxScale: 4,
-      child: Image.file(
-        file,
-        fit: BoxFit.contain,
-        errorBuilder: (_, _, _) => const Icon(
-          Icons.broken_image_outlined,
-          size: 64,
-          color: Color(0xFF929BAD),
-        ),
-      ),
+      child: image,
     );
   }
 }
