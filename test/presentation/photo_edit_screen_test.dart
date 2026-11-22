@@ -72,6 +72,18 @@ void main() {
       const Offset(55, 35),
     );
     await tester.pump();
+    // 점에서 떨어진 안쪽을 끌어도 가장 가까운 모서리(오른아래)가 따라온다.
+    final before = tester.getCenter(
+      find.byKey(const ValueKey('crop-corner-2')),
+    );
+    await tester.dragFrom(
+      before - const Offset(40, 40),
+      const Offset(-30, -20),
+    );
+    await tester.pump();
+    final after = tester.getCenter(find.byKey(const ValueKey('crop-corner-2')));
+    expect(after.dx, lessThan(before.dx));
+    expect(after.dy, lessThan(before.dy));
     await tester.tap(find.text('원본 색상'));
     await tester.pump();
     expect(tester.widget<Slider>(find.byType(Slider)).value, 0);
