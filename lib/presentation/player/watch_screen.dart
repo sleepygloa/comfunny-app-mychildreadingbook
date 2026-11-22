@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 
 import '../../core/app_logger.dart';
 import '../../core/error_codes.dart';
+import '../../domain/repositories/repositories.dart';
+import '../../service_locator.dart';
 import 'playback_queue.dart';
 import 'player_screen.dart';
 import 'player_view_model.dart';
@@ -18,9 +20,13 @@ class ScreenGuard {
   ScreenGuard._();
   static const _channel = MethodChannel('mychild_reading/screen');
 
-  static Future<void> watchMode(bool on) async {
+  /// [secure] 가 false 면 화면만 켜 두고 캡처 · 미러링은 막지 않는다(설정 › TV 미러링 허용).
+  static Future<void> watchMode(bool on, {bool secure = true}) async {
     try {
-      await _channel.invokeMethod<void>('watchMode', {'on': on});
+      await _channel.invokeMethod<void>('watchMode', {
+        'on': on,
+        'secure': secure,
+      });
     } on MissingPluginException {
       // iOS · 테스트 — 채널이 없다. 캡처 막기는 안드로이드만 한다.
     } on PlatformException catch (e) {
@@ -50,7 +56,7 @@ class WatchReader extends StatelessWidget {
 ///
 /// - 그림만 크게, 버튼 없음. 페이지는 목소리가 끝나면 저절로 넘어간다(플레이어의 기존 흐름).
 /// - **아이 잠금:** 뒤로 가기를 막고, 오른쪽 위 자물쇠를 [unlockHold] 동안 눌러야 나간다.
-/// - 안드로이드에서는 캡처 · 녹화를 막고 화면을 켜 둔다([ScreenGuard]).
+/// - 안드로이드에서는 화면을 켜 두고, 설정에서 미러링을 허용하지 않았으면 캡처 · 녹화 · 미러링을 막는다([ScreenGuard]).
 class WatchScreen extends StatefulWidget {
   const WatchScreen({
     super.key,
@@ -91,7 +97,14 @@ class _WatchScreenState extends State<WatchScreen>
       DeviceOrientation.landscapeRight,
     ]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    ScreenGuard.watchMode(true);
+    _guard();
+  }
+
+  Future<void> _guard() async {
+    final allow = await sl<WatchSettingsRepository>().allowMirroring();
+    // 설정을 읽는 사이에 화면을 떠났으면 켜지 않는다.
+    if (!mounted) return;
+    await ScreenGuard.watchMode(true, secure: !allow);
   }
 
   @override

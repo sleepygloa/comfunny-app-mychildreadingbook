@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mychild_reading/data/local/media_storage.dart';
+import 'package:mychild_reading/domain/repositories/repositories.dart';
 import 'package:mychild_reading/presentation/player/player_view_model.dart';
 import 'package:mychild_reading/presentation/player/watch_screen.dart';
 import 'package:mychild_reading/service_locator.dart';
@@ -69,12 +70,19 @@ void main() {
     );
     await tester.tap(find.text('열기'));
     await tester.pumpAndSettle();
+    // 설정 파일을 읽는 실제 IO 가 끝날 때까지 기다린다.
+    for (var i = 0; i < 20 && screenCalls.isEmpty; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)),
+      );
+      await tester.pump();
+    }
     return toggles;
   }
 
   testWidgets('가로 전체 화면 · 화면 보호를 켜고, 나가면 되돌린다', (tester) async {
     await pumpWatch(tester);
-    expect(screenCalls.single.arguments, {'on': true});
+    expect(screenCalls.single.arguments, {'on': true, 'secure': true});
     final orient = systemCalls.firstWhere(
       (c) => c.method == 'SystemChrome.setPreferredOrientations',
     );
@@ -96,7 +104,7 @@ void main() {
     await gesture.up();
     await tester.pumpAndSettle();
     expect(find.text('열기'), findsOneWidget);
-    expect(screenCalls.last.arguments, {'on': false});
+    expect(screenCalls.last.arguments['on'], isFalse);
     expect(
       systemCalls.where(
         (c) =>
@@ -116,5 +124,19 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
     expect(find.text('열기'), findsNothing);
     expect(find.byType(WatchScreen), findsOneWidget);
+  });
+
+  testWidgets('설정에서 미러링을 허용하면 캡처 막기를 켜지 않는다(화면 켜 두기만)', (tester) async {
+    await tester.runAsync(
+      () => sl<WatchSettingsRepository>().setAllowMirroring(true),
+    );
+    await pumpWatch(tester);
+    expect(screenCalls.single.arguments, {'on': true, 'secure': false});
+    expect(
+      await tester.runAsync(
+        () => sl<WatchSettingsRepository>().allowMirroring(),
+      ),
+      isTrue,
+    );
   });
 }

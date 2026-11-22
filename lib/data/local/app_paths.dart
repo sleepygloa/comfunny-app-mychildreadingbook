@@ -22,6 +22,10 @@ class AppPaths {
   static const String draftsDir = 'drafts';
   static const String readingPositionsDir = 'reading_positions';
 
+  /// 기기 설정. **백업 루트가 아니다** — 기기마다 다른 선택이라 백업 · 복원에서 뺀다.
+  static const String settingsDir = 'settings';
+  static const String watchSettingsFile = '$settingsDir/watch.json';
+
   // ── 인덱스 파일 (앱 문서 디렉토리 기준 상대) ──────────────
   static const String seriesFile = '$indexDir/series.json';
   static const String playlistsFile = '$indexDir/playlists.json';

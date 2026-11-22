@@ -39,18 +39,24 @@ class MainActivity : AudioServiceActivity() {
                 } }
             }
         }
-        // 영상처럼 보기: 캡처 · 녹화 막기(FLAG_SECURE) + 화면 켜 두기. 나가면 둘 다 푼다.
+        // 영상처럼 보기: 화면 켜 두기 + (미러링을 허용하지 않았으면) 캡처 · 녹화 막기(FLAG_SECURE).
+        // 나가면 둘 다 푼다.
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "mychild_reading/screen")
             .setMethodCallHandler { call, result ->
                 if (call.method != "watchMode") {
                     result.notImplemented()
                 } else {
-                    val flags = WindowManager.LayoutParams.FLAG_SECURE or
-                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                    val keepOn = WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                    val secure = WindowManager.LayoutParams.FLAG_SECURE
                     if (call.argument<Boolean>("on") == true) {
-                        window.addFlags(flags)
+                        window.addFlags(keepOn)
+                        if (call.argument<Boolean>("secure") != false) {
+                            window.addFlags(secure)
+                        } else {
+                            window.clearFlags(secure)
+                        }
                     } else {
-                        window.clearFlags(flags)
+                        window.clearFlags(keepOn or secure)
                     }
                     result.success(null)
                 }

@@ -89,3 +89,13 @@ abstract class BookTagRepository {
   Future<void> save(BookTags tags);
   Future<void> delete(String contentId);
 }
+
+/// 이 기기의 영상처럼 보기 설정 — `settings/watch.json`.
+///
+/// 왜 백업에 넣지 않나: 기기마다 다른 선택이다(TV 에 연결하는 태블릿만 미러링을 켠다).
+/// 그래서 백업 루트(`index/` 등) 밖에 두고, 복원이 건드리지 않는다.
+abstract class WatchSettingsRepository {
+  /// TV 미러링(화면 보내기)을 허용하는가. 기본은 막음(캡처 · 녹화 막기).
+  Future<bool> allowMirroring();
+  Future<void> setAllowMirroring(bool value);
+}

@@ -319,6 +319,7 @@ VoiceStatus   : pending | ready | failed
 │   └── recent_playback.json
 ├── drafts/{contentId}/data.json + assets/
 ├── reading_positions/{contentId}/data.json
+├── settings/watch.json            # 기기 설정(TV 미러링 허용) — 백업 루트 아님
 └── .restore-transaction/          # 복원 중에만 존재 — 수동 삭제 금지
 ```
 
@@ -451,4 +452,5 @@ M2 연동 단계에서 도입할 때의 경계다. **지금은 앱이 어떤 클
 | 2026-11-22 | 1차 구현: 주제 사전 · 책 꼬리표(주제 · 즐겨찾기 · 나이 · 누리과정) 저장과 복원 검사, 책장 배지 · ⚙ 거르기 · 표지 별, 3번째 탭 모아보기, 최근재생목록은 설정 안으로 |
 | 2026-11-22 | 2차 구현: 방 고르기(작은 음악방 · 도서관 · 영상관) — `ContentType.audio` 추가, 방을 바꾸면 그 종류만 다시 읽는다 |
 | 2026-11-22 | 3차 구현: 영상처럼 보기(`/watch`) — 가로 전체 화면 · 자동 넘김 · 아이 잠금(🔒 2초) · Android 캡처 막기와 화면 켜 두기(`mychild_reading/screen` 채널) |
+| 2026-11-22 | 영상처럼 보기 TV 미러링 허용 설정(기본 막음, 기기별 · 백업 제외) |
 | 2026-10-06 | 묶음 재편(`200-apps-games/apps/01-mychild-reading`), 죽은 코드 정리(`LibraryScreen`·`ContentEditScreen`·AI 잡 enum·`E-MCR-503`·`cupertino_icons`), **OS 클라우드 백업 차단**, 문서 실측 현행화 |

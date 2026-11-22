@@ -19,6 +19,7 @@ import 'domain/repositories/book_authoring_repository.dart';
 import 'data/local/media_storage.dart';
 import 'data/repositories/content_repository_impl.dart';
 import 'data/repositories/index_repositories.dart';
+import 'data/repositories/watch_settings_repository_impl.dart';
 import 'data/repositories/reading_workspace_repositories.dart';
 import 'data/services/device_tts_service.dart';
 import 'data/services/recording_service.dart';
@@ -107,6 +108,9 @@ Future<void> registerWith(Directory baseDir) async {
     )
     ..registerLazySingleton<BookTagRepository>(
       () => BookTagRepositoryImpl(sl<JsonStore>()),
+    )
+    ..registerLazySingleton<WatchSettingsRepository>(
+      () => WatchSettingsRepositoryImpl(sl<JsonStore>()),
     );
 
   sl.registerLazySingleton<RecentPlaybackRepository>(

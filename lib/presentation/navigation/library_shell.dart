@@ -11,6 +11,7 @@ import '../../domain/entities/content.dart';
 import '../../domain/entities/playlist.dart';
 import '../../domain/repositories/book_authoring_repository.dart';
 import '../../domain/repositories/reading_workspace_repositories.dart';
+import '../../domain/repositories/repositories.dart';
 import '../../service_locator.dart';
 import '../library/book_tag_sheet.dart';
 import '../library/catalog_view_model.dart';
@@ -1083,12 +1084,50 @@ class _PlaylistEditorState extends State<PlaylistEditor> {
   }
 }
 
-class _Settings extends StatelessWidget {
+class _Settings extends StatefulWidget {
   const _Settings();
+  @override
+  State<_Settings> createState() => _SettingsState();
+}
+
+class _SettingsState extends State<_Settings> {
+  bool? _mirroring;
+  @override
+  void initState() {
+    super.initState();
+    sl<WatchSettingsRepository>().allowMirroring().then((v) {
+      if (mounted) setState(() => _mirroring = v);
+    });
+  }
+
+  Future<void> _setMirroring(bool value) async {
+    setState(() => _mirroring = value);
+    try {
+      await sl<WatchSettingsRepository>().setAllowMirroring(value);
+    } on Object {
+      if (!mounted) return;
+      setState(() => _mirroring = !value);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('설정을 저장하지 못했어요. 다시 시도해 주세요.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.all(20),
     children: [
+      SwitchListTile(
+        secondary: const Icon(Icons.cast),
+        title: const Text('영상처럼 보기 · TV 미러링 허용'),
+        subtitle: Text(
+          _mirroring == true
+              ? 'TV 로 화면을 보낼 수 있어요. 대신 캡처 · 녹화도 막지 않아요.'
+              : '캡처 · 녹화를 막아요. TV 로 보내면 화면이 검게 나와요.',
+        ),
+        value: _mirroring ?? false,
+        onChanged: _mirroring == null ? null : _setMirroring,
+      ),
       ListTile(
         leading: const Icon(Icons.history),
         title: const Text('최근재생목록'),
