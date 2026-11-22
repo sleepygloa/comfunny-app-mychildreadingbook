@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../presentation/navigation/library_shell.dart';
 import '../presentation/player/queue_screen.dart';
+import '../presentation/player/watch_screen.dart';
 import '../presentation/player/playback_editing_boundary.dart';
 import '../presentation/library/astra_library_screen.dart';
 import '../presentation/common/parent_boundary.dart';
@@ -23,6 +24,8 @@ class AppRouter {
       GoRoute(path: '/', builder: (_, _) => const LibraryShell()),
       GoRoute(path: '/queue', builder: (_, _) => const QueueScreen()),
       GoRoute(path: '/reader', builder: (_, _) => const QueueReader()),
+      // 영상처럼 보기 — 가로 전체 화면 · 아이 잠금 (2026-11-22)
+      GoRoute(path: '/watch', builder: (_, _) => const WatchReader()),
       GoRoute(
         path: '/drafts',
         builder: (_, _) => const ParentBoundary(child: ParentLibraryScreen()),

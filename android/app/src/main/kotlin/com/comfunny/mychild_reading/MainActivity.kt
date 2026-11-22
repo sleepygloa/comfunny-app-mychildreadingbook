@@ -3,6 +3,7 @@ package com.comfunny.mychild_reading
 import android.app.Activity
 import android.content.Intent
 import android.provider.DocumentsContract
+import android.view.WindowManager
 import com.ryanheise.audioservice.AudioServiceActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -38,6 +39,22 @@ class MainActivity : AudioServiceActivity() {
                 } }
             }
         }
+        // 영상처럼 보기: 캡처 · 녹화 막기(FLAG_SECURE) + 화면 켜 두기. 나가면 둘 다 푼다.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "mychild_reading/screen")
+            .setMethodCallHandler { call, result ->
+                if (call.method != "watchMode") {
+                    result.notImplemented()
+                } else {
+                    val flags = WindowManager.LayoutParams.FLAG_SECURE or
+                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                    if (call.argument<Boolean>("on") == true) {
+                        window.addFlags(flags)
+                    } else {
+                        window.clearFlags(flags)
+                    }
+                    result.success(null)
+                }
+            }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "mychild_reading/backup_files")
             .setMethodCallHandler { call, result ->
                 if (call.method != "exportBackup" && call.method != "pickBackup") {

@@ -34,6 +34,10 @@ class ErrorCode {
     '저장 중인 작업이 있어요. 작업을 마친 뒤 다시 백업해 주세요.',
   );
 
+  /// 영상처럼 보기의 화면 보호(캡처 막기 · 화면 켜 두기)를 켜거나 끄지 못했다.
+  /// 보기는 계속되므로 사용자에게 알리지 않고 기록만 한다.
+  static const screenGuardFailure = ErrorCode('E-MCR-520', '화면 보호를 켜지 못했어요.');
+
   @override
   String toString() => code;
 }
