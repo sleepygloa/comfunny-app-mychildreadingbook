@@ -23,6 +23,9 @@ class _PhotoEditScreenState extends State<PhotoEditScreen> {
   double _brightness = .09;
   bool _saving = false;
   bool _allowExit = false;
+
+  /// 손가락이 지금 끌고 있는 모서리(0 왼위 · 1 오른위 · 2 오른아래 · 3 왼아래).
+  int? _activeCorner;
   String? _error;
   @override
   void initState() {
@@ -62,6 +65,24 @@ class _PhotoEditScreenState extends State<PhotoEditScreen> {
       b = (b + delta.dy / size.height).clamp(t + .08, 1);
     }
     setState(() => _crop = Rect.fromLTRB(l, t, r, b));
+  }
+
+  /// [p] 에서 가장 가까운 자르기 모서리.
+  static int _nearestCorner(Rect rect, Offset p) {
+    final corners = [
+      rect.topLeft,
+      rect.topRight,
+      rect.bottomRight,
+      rect.bottomLeft,
+    ];
+    var best = 0;
+    for (var i = 1; i < corners.length; i++) {
+      if ((corners[i] - p).distanceSquared <
+          (corners[best] - p).distanceSquared) {
+        best = i;
+      }
+    }
+    return best;
   }
 
   Future<void> _apply() async {
@@ -145,6 +166,31 @@ class _PhotoEditScreenState extends State<PhotoEditScreen> {
                   child: CustomPaint(painter: _CropMask(rect)),
                 ),
               ),
+              // 점을 정확히 잡지 않아도 된다 — 사진 어디를 끌든 가장 가까운 모서리가 따라온다.
+              // 왜: 화면 가장자리는 뒤로 가기 · 한 손 모드 몸짓이 먼저 가져가서, 모서리 점이
+              // 가장자리에 붙으면 잡히지 않는다(2026-11-22 오너 요청).
+              Positioned.fill(
+                child: GestureDetector(
+                  key: const ValueKey('crop-area'),
+                  behavior: HitTestBehavior.opaque,
+                  onPanStart: _saving
+                      ? null
+                      : (d) => setState(
+                          () => _activeCorner = _nearestCorner(
+                            rect,
+                            d.localPosition,
+                          ),
+                        ),
+                  onPanUpdate: _saving
+                      ? null
+                      : (d) {
+                          final corner = _activeCorner;
+                          if (corner != null) _move(corner, d.delta, size);
+                        },
+                  onPanEnd: (_) => setState(() => _activeCorner = null),
+                  onPanCancel: () => setState(() => _activeCorner = null),
+                ),
+              ),
               for (final entry in [
                 rect.topLeft,
                 rect.topRight,
@@ -159,19 +205,29 @@ class _PhotoEditScreenState extends State<PhotoEditScreen> {
                     child: GestureDetector(
                       key: ValueKey('crop-corner-${entry.key}'),
                       behavior: HitTestBehavior.opaque,
+                      onPanStart: _saving
+                          ? null
+                          : (_) => setState(() => _activeCorner = entry.key),
                       onPanUpdate: _saving
                           ? null
                           : (details) => _move(entry.key, details.delta, size),
-                      child: const SizedBox(
+                      onPanEnd: (_) => setState(() => _activeCorner = null),
+                      child: SizedBox(
                         width: 48,
                         height: 48,
                         child: Center(
                           child: DecoratedBox(
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              // 끌고 있는 모서리는 크게 · 색을 바꿔 어느 점이 움직이는지 보인다.
+                              color: _activeCorner == entry.key
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Colors.white,
                               shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
                             ),
-                            child: SizedBox(width: 20, height: 20),
+                            child: SizedBox.square(
+                              dimension: _activeCorner == entry.key ? 28 : 20,
+                            ),
                           ),
                         ),
                       ),
@@ -191,7 +247,7 @@ class _PhotoEditScreenState extends State<PhotoEditScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('네 모서리를 움직여 책 영역을 맞춰 주세요.'),
+          const Text('점이나 그 안쪽 가까운 곳을 끌어 책 영역을 맞춰 주세요.'),
           Wrap(
             spacing: 8,
             children: [
