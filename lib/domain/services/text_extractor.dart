@@ -17,24 +17,25 @@ abstract interface class TextExtractor {
 
 /// 읽은 글을 녹음용으로 다듬는다.
 ///
-/// 왜: 인식 결과는 줄마다 끊겨 있고 빈 줄·앞뒤 공백이 섞인다. 문단(빈 줄)은 살리고
-/// 한 문단 안의 줄바꿈은 그대로 두어 책 모양과 같게 읽히게 한다.
+/// 왜: 인식 결과는 책의 줄마다 끊기고, 글 덩어리 사이에 빈 줄이 들어가 화면에서 띄엄띄엄 보인다
+/// (2026-11-22 오너 실기기 사용). 한 덩어리 안의 줄은 띄어쓰기로 이어 문장으로 만들고,
+/// 덩어리 사이는 줄바꿈 하나로만 나눠 녹음할 때 한눈에 읽히게 한다.
 String tidyExtractedText(String raw) {
-  final lines = raw
-      .replaceAll('\r\n', '\n')
-      .split('\n')
-      .map((line) => line.trim().replaceAll(RegExp(r'\s+'), ' '))
-      .toList();
-  final out = <String>[];
-  for (final line in lines) {
-    if (line.isEmpty) {
-      if (out.isNotEmpty && out.last.isNotEmpty) out.add('');
+  final paragraphs = <String>[];
+  final current = <String>[];
+  void flush() {
+    if (current.isNotEmpty) paragraphs.add(current.join(' '));
+    current.clear();
+  }
+
+  for (final line in raw.replaceAll('\r\n', '\n').split('\n')) {
+    final clean = line.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (clean.isEmpty) {
+      flush();
     } else {
-      out.add(line);
+      current.add(clean);
     }
   }
-  while (out.isNotEmpty && out.last.isEmpty) {
-    out.removeLast();
-  }
-  return out.join('\n');
+  flush();
+  return paragraphs.join('\n');
 }

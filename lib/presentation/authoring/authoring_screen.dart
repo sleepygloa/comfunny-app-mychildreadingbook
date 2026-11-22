@@ -251,6 +251,28 @@ class _AuthoringScreenState extends State<AuthoringScreen>
     }
   }
 
+  /// 뽑은 글을 큰 칸에서 바로 고친다.
+  /// 왜: 기존 입력칸은 "글 · 기기 읽기" 안에 접혀 있어 찾기 어렵다(2026-11-22 오너 요청).
+  Future<void> _editText(BookPage page) async {
+    // FLOW 1: 지금 글로 고치기 창을 연다
+    final edited = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => _EditTextSheet(initial: page.text ?? ''),
+    );
+    // FLOW 2: 고친 글을 쪽에 담고 입력칸도 새 값으로 다시 그린다
+    if (edited == null || !mounted) return;
+    // 자동 저장이 도는 중이면 입력이 잠겨 고친 글이 버려진다 — 저장이 끝날 때까지 잠깐 기다린다
+    for (var i = 0; i < 100 && _vm.isBusy; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      if (!mounted) return;
+    }
+    _vm.setText(page.id, edited.trim());
+    // FLOW 9: 화면을 새로 그린다
+    setState(() => _textRevision[page.id] = (_textRevision[page.id] ?? 0) + 1);
+  }
+
   Widget _image(String path) => FutureBuilder<File>(
     future: AuthoringMediaStore(sl<JsonStore>().baseDir)
         .file('drafts', _vm.draft!.id, path),
@@ -562,32 +584,6 @@ class _AuthoringScreenState extends State<AuthoringScreen>
                                           ? '기기 읽기를 사용해요'
                                           : '목소리를 담아 주세요',
                                     ),
-                                    if (page.hasText &&
-                                        _bigText.contains(page.id))
-                                      Container(
-                                        key: ValueKey('big-text-${page.id}'),
-                                        width: double.infinity,
-                                        margin: const EdgeInsets.symmetric(
-                                          vertical: 8,
-                                        ),
-                                        padding: const EdgeInsets.all(16),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .surfaceContainerHighest,
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
-                                        ),
-                                        // 녹음하면서 폰만 보고 읽을 수 있게 크게 쓴다
-                                        child: Text(
-                                          page.text!,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .headlineSmall
-                                              ?.copyWith(height: 1.6),
-                                        ),
-                                      ),
                                     Wrap(
                                       spacing: 8,
                                       runSpacing: 8,
@@ -663,6 +659,15 @@ class _AuthoringScreenState extends State<AuthoringScreen>
                                           ),
                                       ],
                                     ),
+                                    if (page.hasText &&
+                                        _bigText.contains(page.id))
+                                      _BigText(
+                                        key: ValueKey('big-text-${page.id}'),
+                                        text: page.text!,
+                                        onEdit: locked
+                                            ? null
+                                            : () => _editText(page),
+                                      ),
                                   ],
                                   if (!widget.voiceOnly)
                                     TextButton.icon(
@@ -815,4 +820,123 @@ class _AuthoringScreenState extends State<AuthoringScreen>
       ),
     );
   }
+}
+
+/// 녹음하면서 보고 읽는 큰 글씨 칸.
+///
+/// 왜 높이를 고정하나: 글이 길면 칸이 화면을 다 차지해 녹음 · 멈춤 버튼이 밀려난다
+/// (2026-11-22 오너 실기기 사용). 칸 안에서만 스크롤하고 버튼은 칸 위에 둔다.
+class _BigText extends StatefulWidget {
+  const _BigText({super.key, required this.text, this.onEdit});
+  final String text;
+  final VoidCallback? onEdit;
+
+  static const maxHeight = 220.0;
+
+  @override
+  State<_BigText> createState() => _BigTextState();
+}
+
+class _BigTextState extends State<_BigText> {
+  // 왜 직접 쥐나: 바깥 화면도 스크롤이라 기본(primary) 컨트롤러를 쓸 수 없다.
+  // 스크롤 막대를 늘 보이게 하려면 칸 전용 컨트롤러가 필요하다.
+  final _scroll = ScrollController();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: _BigText.maxHeight),
+            child: Scrollbar(
+              controller: _scroll,
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                controller: _scroll,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text(
+                  widget.text,
+                  style: theme.textTheme.headlineSmall?.copyWith(height: 1.5),
+                ),
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: widget.onEdit,
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text('글 고치기'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 글 고치기 창. 입력 컨트롤러를 창이 직접 쥔다.
+/// 왜: 창이 닫히는 애니메이션 동안에도 입력칸이 컨트롤러를 쓴다. 부르는 쪽에서 바로 해제하면 오류가 난다.
+class _EditTextSheet extends StatefulWidget {
+  const _EditTextSheet({required this.initial});
+  final String initial;
+
+  @override
+  State<_EditTextSheet> createState() => _EditTextSheetState();
+}
+
+class _EditTextSheetState extends State<_EditTextSheet> {
+  late final _controller = TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsets.fromLTRB(
+      16,
+      0,
+      16,
+      16 + MediaQuery.viewInsetsOf(context).bottom,
+    ),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('글 고치기', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 12),
+        TextField(
+          key: const ValueKey('edit-text-field'),
+          controller: _controller,
+          autofocus: true,
+          minLines: 4,
+          maxLines: 10,
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        const SizedBox(height: 12),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _controller.text),
+          child: const Text('고친 글 쓰기'),
+        ),
+      ],
+    ),
+  );
 }
