@@ -84,6 +84,15 @@ void main() {
     final after = tester.getCenter(find.byKey(const ValueKey('crop-corner-2')));
     expect(after.dx, lessThan(before.dx));
     expect(after.dy, lessThan(before.dy));
+    // 글자 또렷하게를 골랐다가 원본으로 돌아와도 화면이 멀쩡하다.
+    await tester.tap(find.text('글자 또렷하게'));
+    await settleIo();
+    expect(
+      tester
+          .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, '글자 또렷하게'))
+          .selected,
+      isTrue,
+    );
     await tester.tap(find.text('원본 색상'));
     await tester.pump();
     expect(tester.widget<Slider>(find.byType(Slider)).value, 0);

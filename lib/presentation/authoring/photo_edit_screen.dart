@@ -18,6 +18,14 @@ class PhotoEditScreen extends StatefulWidget {
 
 class _PhotoEditScreenState extends State<PhotoEditScreen> {
   ui.Image? _image;
+
+  /// 글자 또렷하게 고른 결과. 고를 때 한 번 만들고 다시 쓴다.
+  ui.Image? _clear;
+  bool _clarify = false;
+  bool _clarifying = false;
+
+  /// 반사로 하얗게 날아간 곳이 많으면 다시 찍기를 권한다.
+  bool _glare = false;
   Rect _crop = const Rect.fromLTRB(0, 0, 1, 1);
   bool _enhanced = true;
   double _brightness = .09;
@@ -41,6 +49,8 @@ class _PhotoEditScreenState extends State<PhotoEditScreen> {
         return;
       }
       setState(() => _image = image);
+      final glare = await PhotoProcessing.glareOf(image);
+      if (mounted && glare > .02) setState(() => _glare = true);
     } on Object {
       if (mounted) setState(() => _error = '사진을 열지 못했어요. 돌아가서 다시 촬영해 주세요.');
     }
@@ -49,8 +59,39 @@ class _PhotoEditScreenState extends State<PhotoEditScreen> {
   @override
   void dispose() {
     _image?.dispose();
+    _clear?.dispose();
     super.dispose();
   }
+
+  Future<void> _selectClarify() async {
+    setState(() {
+      _clarify = true;
+      _enhanced = false;
+      _brightness = 0;
+    });
+    if (_clear != null || _clarifying || _image == null) return;
+    setState(() => _clarifying = true);
+    try {
+      final clear = await PhotoProcessing.clarified(_image!);
+      if (!mounted) {
+        clear.dispose();
+        return;
+      }
+      setState(() => _clear = clear);
+    } on Object {
+      if (mounted) {
+        setState(() {
+          _clarify = false;
+          _error = '글자 보정을 하지 못했어요. 다른 보정을 골라 주세요.';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _clarifying = false);
+    }
+  }
+
+  /// 지금 보이는(저장될) 이미지.
+  ui.Image get _shown => _clarify && _clear != null ? _clear! : _image!;
 
   void _move(int corner, Offset delta, Size size) {
     var l = _crop.left, t = _crop.top, r = _crop.right, b = _crop.bottom;
@@ -92,7 +133,8 @@ class _PhotoEditScreenState extends State<PhotoEditScreen> {
       _error = null;
     });
     // 화면이 외부에서 제거돼도 인코딩이 끝날 때까지 이미지를 소유한다.
-    final image = _image!.clone();
+    if (_clarify && _clear == null) return;
+    final image = _shown.clone();
     File? file;
     try {
       final bytes = await PhotoProcessing.render(
@@ -130,7 +172,7 @@ class _PhotoEditScreenState extends State<PhotoEditScreen> {
 
   Widget _canvas() => LayoutBuilder(
     builder: (context, constraints) {
-      final image = _image!;
+      final image = _shown;
       final scale = math.min(
         (constraints.maxWidth - 40) / image.width,
         (constraints.maxHeight - 40) / image.height,
@@ -247,17 +289,28 @@ class _PhotoEditScreenState extends State<PhotoEditScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (_glare)
+            Card(
+              color: Theme.of(context).colorScheme.tertiaryContainer,
+              child: const Padding(
+                padding: EdgeInsets.all(10),
+                child: Text(
+                  '빛 반사로 하얗게 된 곳이 있어요. 책을 조금 기울이거나 불빛을 피해 다시 찍으면 글자가 더 잘 보여요.',
+                ),
+              ),
+            ),
           const Text('점이나 그 안쪽 가까운 곳을 끌어 책 영역을 맞춰 주세요.'),
           Wrap(
             spacing: 8,
             children: [
               ChoiceChip(
                 label: const Text('원본 색상'),
-                selected: !_enhanced,
+                selected: !_enhanced && !_clarify,
                 onSelected: _saving
                     ? null
                     : (_) => setState(() {
                         _enhanced = false;
+                        _clarify = false;
                         _brightness = 0;
                       }),
               ),
@@ -268,8 +321,16 @@ class _PhotoEditScreenState extends State<PhotoEditScreen> {
                     ? null
                     : (_) => setState(() {
                         _enhanced = true;
+                        _clarify = false;
                         _brightness = .09;
                       }),
+              ),
+              ChoiceChip(
+                label: Text(_clarifying ? '글자 보정 중…' : '글자 또렷하게'),
+                selected: _clarify,
+                onSelected: _saving || _clarifying
+                    ? null
+                    : (_) => _selectClarify(),
               ),
             ],
           ),
@@ -302,7 +363,7 @@ class _PhotoEditScreenState extends State<PhotoEditScreen> {
         title: const Text('영역 조정 · 보정'),
         actions: [
           TextButton(
-            onPressed: _image == null || _saving ? null : _apply,
+            onPressed: _image == null || _saving || _clarifying ? null : _apply,
             child: Text(_saving ? '처리 중…' : '적용'),
           ),
         ],
