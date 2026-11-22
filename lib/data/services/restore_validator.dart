@@ -213,6 +213,8 @@ class RestoreValidator {
             'children.json',
             'voice_profiles.json',
             'reading_events.json',
+            'topics.json',
+            'book_tags.json',
           ].contains(parts.last),
         );
         final rows = _list(data);
@@ -247,6 +249,17 @@ class RestoreValidator {
               if (row['endedAt'] != null) _date(row['endedAt']);
               _number(row['durationSec']);
               _check(row['completed'] is bool);
+            case 'topics.json':
+              _check(row['name'] is String);
+              if (row['parentId'] != null) _id(row['parentId']);
+              _optionalStrings(row, ['emoji']);
+              if (row['order'] != null) _number(row['order']);
+            case 'book_tags.json':
+              _ids(_list(row['topicIds'] ?? []));
+              _check(row['favorite'] == null || row['favorite'] is bool);
+              if (row['ageMin'] != null) _number(row['ageMin']);
+              if (row['ageMax'] != null) _number(row['ageMax']);
+              _check(_list(row['nuriAreas'] ?? []).every((v) => v is String));
           }
         }
       }

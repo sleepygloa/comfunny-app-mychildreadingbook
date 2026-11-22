@@ -288,7 +288,10 @@ void main() {
     await tester.tap(find.byTooltip('잠들기 전 전체 재생'));
     await settle(tester);
     expect(find.text('잠들기 전'), findsOneWidget);
-    await tester.tap(find.text('최근재생목록').last);
+    // 최근재생목록은 탭이 아니라 설정 안에 있다.
+    await tester.tap(find.text('설정').last);
+    await settle(tester);
+    await tester.tap(find.text('최근재생목록'));
     await settle(tester);
     expect(find.text('달빛 산책'), findsNWidgets(2));
     await tester.tap(find.text('달빛 산책').first);
@@ -326,6 +329,43 @@ void main() {
     expect(queue.player!.isPlaying, isFalse);
     await tester.pumpWidget(const SizedBox());
     queue.dispose();
+    await settle(tester);
+  });
+
+  testWidgets('표지 별을 누르면 모아보기에 즐겨찾기가 생기고, 거르기 줄은 ⚙ 를 눌러야 보인다', (tester) async {
+    tester.view.physicalSize = const Size(430, 932);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.runAsync(() async {
+      await sl<SeriesRepository>().save(
+        const Series(id: 'series', title: '달빛 전집', publisher: '그레이트북스'),
+      );
+      await sl<ContentRepository>().save(fixtures.book('a'));
+    });
+    await tester.pumpWidget(const MyChildReadingApp());
+    await settle(tester);
+    expect(find.text('오늘은 어떤 책을\n함께 읽을까요?'), findsNothing);
+    expect(find.text('⭐ 즐겨찾기'), findsNothing);
+    await tester.tap(find.byTooltip('거르기'));
+    await settle(tester);
+    expect(find.text('⭐ 즐겨찾기'), findsOneWidget);
+    expect(find.text('🔬 과학'), findsOneWidget);
+    await tester.tap(find.byTooltip('거르기 닫기'));
+    await settle(tester);
+    expect(find.text('⭐ 즐겨찾기'), findsNothing);
+    // 전집은 접힌 채로 시작한다.
+    await tester.tap(find.text('달빛 전집'));
+    await settle(tester);
+    await tester.tap(find.byTooltip('즐겨찾기'));
+    await settle(tester);
+    expect(find.byTooltip('즐겨찾기 빼기'), findsOneWidget);
+    await tester.tap(find.text('모아보기').last);
+    await settle(tester);
+    expect(find.text('즐겨찾기'), findsWidgets);
+    expect(find.text('1권'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
     await settle(tester);
   });
 

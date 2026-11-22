@@ -12,7 +12,9 @@ import '../../domain/entities/playlist.dart';
 import '../../domain/repositories/book_authoring_repository.dart';
 import '../../domain/repositories/reading_workspace_repositories.dart';
 import '../../service_locator.dart';
+import '../library/book_tag_sheet.dart';
 import '../library/catalog_view_model.dart';
+import '../library/collections_tab.dart';
 import '../common/parent_boundary.dart';
 import '../common/storybook_widgets.dart';
 import '../player/playback_queue.dart';
@@ -107,7 +109,7 @@ class _LibraryShellState extends State<LibraryShell> {
     final catalog = context.watch<CatalogViewModel>();
     return Scaffold(
       appBar: AppBar(
-        title: Text(['작은 도서관', '플레이리스트', '최근재생목록', '설정'][_tab]),
+        title: Text(['작은 도서관', '플레이리스트', '모아보기', '설정'][_tab]),
         actions: [
           if (_tab < 2)
             IconButton(
@@ -172,7 +174,8 @@ class _LibraryShellState extends State<LibraryShell> {
                 children: [
                   _books(catalog),
                   _playlists(catalog),
-                  const QueuePanel(),
+                  // 최근재생목록은 설정 안으로 옮겼다(2026-11-21 오너 결정) — 자리는 모아보기.
+                  const CollectionsTab(),
                   const _Settings(),
                 ],
               ),
@@ -215,11 +218,14 @@ class _LibraryShellState extends State<LibraryShell> {
               ),
               NavigationDestination(
                 icon: StoryTabIcon(
-                  icon: Icons.history_outlined,
+                  icon: Icons.collections_bookmark_outlined,
                   selected: false,
                 ),
-                selectedIcon: StoryTabIcon(icon: Icons.history, selected: true),
-                label: '최근재생목록',
+                selectedIcon: StoryTabIcon(
+                  icon: Icons.collections_bookmark,
+                  selected: true,
+                ),
+                label: '모아보기',
               ),
               NavigationDestination(
                 icon: StoryTabIcon(
@@ -243,13 +249,8 @@ class _LibraryShellState extends State<LibraryShell> {
     onRefresh: c.load,
     child: ListView(
       padding: const EdgeInsets.all(20),
+      // 인사 카드를 지우고 검색을 제목 바로 아래에 둔다(2026-11-21 오너 결정).
       children: [
-        StoryWelcome(
-          title: '오늘은 어떤 책을\n함께 읽을까요?',
-          subtitle: c.books.isEmpty
-              ? '한 권의 책에, 다정한 목소리를 담아요.'
-              : '${c.books.length}권의 이야기가 기다리고 있어요.',
-        ),
         _SearchAndBadges(catalog: c),
         if (c.books.isEmpty)
           const _Empty(
@@ -343,6 +344,9 @@ class _SearchAndBadgesState extends State<_SearchAndBadges> {
   late final TextEditingController _controller = TextEditingController(
     text: widget.catalog.query,
   );
+
+  /// ⚙ 를 눌러 연 상태. 평소에는 거르기 줄을 숨긴다 — 책 목록이 먼저 보여야 한다.
+  bool _open = false;
   CatalogViewModel get catalog => widget.catalog;
   @override
   void didUpdateWidget(covariant _SearchAndBadges oldWidget) {
@@ -361,48 +365,94 @@ class _SearchAndBadgesState extends State<_SearchAndBadges> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      TextFormField(
-        controller: _controller,
-        decoration: const InputDecoration(
-          prefixIcon: Icon(Icons.search),
-          hintText: '출판사 · 전집 · 책 제목 검색',
-        ),
-        onChanged: catalog.search,
+  Widget _row(List<Widget> chips) => SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    child: Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          for (final chip in chips)
+            Padding(padding: const EdgeInsets.only(right: 8), child: chip),
+        ],
       ),
-      const SizedBox(height: 12),
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: ChoiceChip(
-                label: const Text('전체'),
-                selected: catalog.publisher == null,
-                onSelected: (_) => catalog.selectPublisher(null),
-              ),
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final showFilters =
+        _open || catalog.query.isNotEmpty || catalog.hasActiveFilters;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: _controller,
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.search),
+            hintText: '책 제목 · 전집 · 주제 검색',
+            suffixIcon: IconButton(
+              tooltip: showFilters ? '거르기 닫기' : '거르기',
+              isSelected: showFilters,
+              icon: const Icon(Icons.tune),
+              onPressed: () => setState(() {
+                if (showFilters) {
+                  // 닫을 때 조건도 함께 푼다 — 숨겨진 조건이 책을 가리면 아이가 "책이 없어졌다"고 느낀다.
+                  _open = false;
+                  _controller.clear();
+                  catalog.search('');
+                  catalog.clearFilters();
+                } else {
+                  _open = true;
+                }
+              }),
             ),
-            for (final publisher in catalog.publishers)
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  label: Text(publisher),
-                  selected: catalog.publisher == publisher,
-                  onSelected: (_) => catalog.selectPublisher(
-                    catalog.publisher == publisher ? null : publisher,
-                  ),
+          ),
+          onChanged: catalog.search,
+        ),
+        const SizedBox(height: 12),
+        if (showFilters) ...[
+          _row([
+            ChoiceChip(
+              label: const Text('전체'),
+              selected: !catalog.hasActiveFilters,
+              onSelected: (_) => catalog.clearFilters(),
+            ),
+            FilterChip(
+              label: const Text('⭐ 즐겨찾기'),
+              selected: catalog.favoritesOnly,
+              onSelected: catalog.setFavoritesOnly,
+            ),
+            for (final t in catalog.rootTopics)
+              FilterChip(
+                label: Text('${t.emoji} ${t.name}'),
+                selected: catalog.topicFilter == t.id,
+                onSelected: (_) => catalog.selectTopic(
+                  catalog.topicFilter == t.id ? null : t.id,
                 ),
               ),
-          ],
-        ),
-      ),
-      const SizedBox(height: 12),
-    ],
-  );
+          ]),
+          _row([
+            for (var age = 3; age <= 8; age++)
+              FilterChip(
+                label: Text('$age세'),
+                selected: catalog.ageFilter == age,
+                onSelected: (_) =>
+                    catalog.selectAge(catalog.ageFilter == age ? null : age),
+              ),
+            for (final publisher in catalog.publishers)
+              FilterChip(
+                label: Text(publisher),
+                selected: catalog.publisher == publisher,
+                onSelected: (_) => catalog.selectPublisher(
+                  catalog.publisher == publisher ? null : publisher,
+                ),
+              ),
+          ]),
+          const SizedBox(height: 4),
+        ],
+      ],
+    );
+  }
 }
 
 /// 검색 결과를 펼치되 평소 펼침 상태는 PageStorage에 유지한다.
@@ -515,61 +565,99 @@ class BookRow extends StatelessWidget {
   const BookRow({super.key, required this.book});
   final Content book;
   @override
-  Widget build(BuildContext context) => ListTile(
-    leading: BookCover(book: book),
-    title: Text(
-      '${book.volume == null ? '' : '${book.volume}. '}${book.title}',
-    ),
-    subtitle: Text('${book.pageCount}쪽'),
-    onTap: () => showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => SafeArea(
+  Widget build(BuildContext context) {
+    final c = context.watch<CatalogViewModel>();
+    final tags = c.tagsOf(book);
+    final badges = [
+      for (final t in c.topicsOf(book))
+        _Badge(
+          label: '${t.emoji.isEmpty ? '' : '${t.emoji} '}${t.name}',
+          color: _topicColor(context, c.rootOf(t.id)?.id ?? t.id),
+        ),
+      if (tags.ageLabel != null)
+        _Badge(
+          label: '🎂 ${tags.ageLabel}',
+          color: Theme.of(context).colorScheme.tertiaryContainer,
+        ),
+      _Badge(
+        label: '${book.pageCount}쪽',
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      ),
+    ];
+    return ListTile(
+      // 줄 높이를 표지 높이(72)에 맞춰 고정한다 — 배지 수가 달라도 줄이 들쭉날쭉하지 않게.
+      minTileHeight: 88,
+      leading: _CoverWithStar(
+        book: book,
+        favorite: tags.favorite,
+        onStar: () => c.toggleFavorite(book),
+      ),
+      title: Text(
+        '${book.volume == null ? '' : '${book.volume}. '}${book.title}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      // 배지가 많으면 한 줄만 보이고 나머지는 잘린다 — 줄 높이를 고정하려는 것이다.
+      // (가로 스크롤 목록은 펼침 상태 저장소(PageStorage)와 부딪혀 쓰지 않는다.)
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 4),
         child: SizedBox(
-          height: MediaQuery.sizeOf(ctx).height * .7,
-          child: Column(
-            children: [
-              ListTile(
-                title: Text(book.title),
-                subtitle: Text('${book.pageCount}쪽'),
-                trailing: IconButton(
-                  tooltip: '책 재생',
-                  icon: const Icon(Icons.play_arrow),
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    playBooks(context, [book]);
-                  },
+          height: 22,
+          child: ClipRect(child: Wrap(runSpacing: 8, children: badges)),
+        ),
+      ),
+      onTap: () => showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        builder: (ctx) => SafeArea(
+          child: SizedBox(
+            height: MediaQuery.sizeOf(ctx).height * .7,
+            child: Column(
+              children: [
+                ListTile(
+                  title: Text(book.title),
+                  subtitle: Text('${book.pageCount}쪽'),
+                  trailing: IconButton(
+                    tooltip: '책 재생',
+                    icon: const Icon(Icons.play_arrow),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      playBooks(context, [book]);
+                    },
+                  ),
                 ),
-              ),
-              Expanded(
-                child: ListView(
-                  children: [
-                    for (final page in book.orderedPages)
-                      ListTile(
-                        leading: Text('${page.orderIndex + 1}'),
-                        title: Text(page.hasText ? page.text! : '그림과 목소리'),
-                      ),
-                  ],
+                Expanded(
+                  child: ListView(
+                    children: [
+                      for (final page in book.orderedPages)
+                        ListTile(
+                          leading: Text('${page.orderIndex + 1}'),
+                          title: Text(page.hasText ? page.text! : '그림과 목소리'),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    ),
-    trailing: PopupMenuButton<String>(
-      tooltip: '${book.title} 메뉴',
-      onSelected: (action) => _action(context, action),
-      itemBuilder: (_) => const [
-        PopupMenuItem(value: 'play', child: Text('재생')),
-        PopupMenuItem(value: 'queue', child: Text('최근재생목록에 추가')),
-        PopupMenuItem(value: 'playlist', child: Text('플레이리스트에 추가')),
-        PopupMenuItem(value: 'edit', child: Text('책 수정')),
-        PopupMenuItem(value: 'voice', child: Text('목소리 넣기')),
-        PopupMenuItem(value: 'delete', child: Text('책 삭제')),
-      ],
-    ),
-  );
+      trailing: PopupMenuButton<String>(
+        tooltip: '${book.title} 메뉴',
+        onSelected: (action) => _action(context, action),
+        itemBuilder: (_) => const [
+          PopupMenuItem(value: 'play', child: Text('재생')),
+          PopupMenuItem(value: 'queue', child: Text('최근재생목록에 추가')),
+          PopupMenuItem(value: 'playlist', child: Text('플레이리스트에 추가')),
+          PopupMenuItem(value: 'tags', child: Text('주제 · 나이 정하기')),
+          PopupMenuItem(value: 'edit', child: Text('책 수정')),
+          PopupMenuItem(value: 'voice', child: Text('목소리 넣기')),
+          PopupMenuItem(value: 'delete', child: Text('책 삭제')),
+        ],
+      ),
+    );
+  }
+
   Future<void> _action(BuildContext context, String action) async {
     final c = context.read<CatalogViewModel>();
     final q = context.read<PlaybackQueue>();
@@ -595,6 +683,10 @@ class BookRow extends StatelessWidget {
       return;
     }
     if (!await confirmManagement(context) || !context.mounted) return;
+    if (action == 'tags') {
+      await showBookTagSheet(context, book);
+      return;
+    }
     if (action == 'playlist') {
       final selected = await showDialog<Playlist>(
         context: context,
@@ -642,6 +734,8 @@ class BookRow extends StatelessWidget {
       if (yes == true) {
         await c.mutate(() async {
           await q.remove(book.id);
+          // 꼬리표도 메타데이터다 — 파일(책 본체)보다 먼저 지운다.
+          await c.deleteTagsOf(book.id);
           await sl<BookAuthoringRepository>().discard(book.id);
           await sl<ReadingPositionRepository>().delete(book.id);
           await c.contents.delete(book.id);
@@ -654,17 +748,21 @@ class BookRow extends StatelessWidget {
 class BookCover extends StatelessWidget {
   const BookCover({super.key, required this.book});
   final Content book;
+
+  /// 표지 크기를 고정한다 — 사진 비율이 제각각이어도 책 줄이 가지런하게.
+  static const double width = 56;
+  static const double height = 72;
   @override
   Widget build(BuildContext context) {
     final path = book.coverPath ?? book.pages.firstOrNull?.imagePath;
     final fallback = Container(
-      width: 44,
-      height: 56,
+      width: BookCover.width,
+      height: BookCover.height,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const BookFriend(size: 44),
+      child: const BookFriend(size: 48),
     );
     return path == null
         ? fallback
@@ -672,13 +770,101 @@ class BookCover extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             child: Image.file(
               File(sl<MediaStorage>().absolutePathOf(book.id, path)),
-              width: 44,
-              height: 56,
+              width: BookCover.width,
+              height: BookCover.height,
               fit: BoxFit.cover,
               errorBuilder: (_, _, _) => fallback,
             ),
           );
   }
+}
+
+/// 표지 오른쪽 아래에 작은 별을 겹친다(2026-11-21 오너 결정). 별만 눌러도 즐겨찾기가 바뀐다.
+class _CoverWithStar extends StatelessWidget {
+  const _CoverWithStar({
+    required this.book,
+    required this.favorite,
+    required this.onStar,
+  });
+  final Content book;
+  final bool favorite;
+  final VoidCallback onStar;
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: BookCover.width + 6,
+    height: BookCover.height + 6,
+    child: Stack(
+      children: [
+        BookCover(book: book),
+        Positioned(
+          right: 0,
+          bottom: 0,
+          child: Semantics(
+            button: true,
+            label: favorite ? '${book.title} 즐겨찾기 빼기' : '${book.title} 즐겨찾기',
+            child: Tooltip(
+              message: favorite ? '즐겨찾기 빼기' : '즐겨찾기',
+              child: InkResponse(
+                onTap: onStar,
+                radius: 18,
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    shape: BoxShape.circle,
+                    boxShadow: const [
+                      BoxShadow(blurRadius: 2, color: Color(0x33000000)),
+                    ],
+                  ),
+                  child: Icon(
+                    favorite ? Icons.star : Icons.star_border,
+                    size: 16,
+                    color: const Color(0xFFF2B33D),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _Badge extends StatelessWidget {
+  const _Badge({required this.label, required this.color});
+  final String label;
+  final Color color;
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(right: 6),
+    child: Container(
+      height: 22,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(label, style: Theme.of(context).textTheme.labelSmall),
+    ),
+  );
+}
+
+/// 큰 주제마다 같은 색을 준다 — 글자를 못 읽는 아이도 색으로 "과학 책"을 알아본다.
+Color _topicColor(BuildContext context, String rootId) {
+  const palette = [
+    Color(0xFFDCEBFA),
+    Color(0xFFDFF3E4),
+    Color(0xFFFFE9D6),
+    Color(0xFFF3E2F7),
+    Color(0xFFFFF4C9),
+    Color(0xFFE2F1F3),
+  ];
+  final dark = Theme.of(context).brightness == Brightness.dark;
+  final base = palette[rootId.hashCode.abs() % palette.length];
+  return dark ? Color.lerp(base, Colors.black, .6)! : base;
 }
 
 class PlaylistDetail extends StatelessWidget {
@@ -898,6 +1084,15 @@ class _Settings extends StatelessWidget {
     padding: const EdgeInsets.all(20),
     children: [
       ListTile(
+        leading: const Icon(Icons.history),
+        title: const Text('최근재생목록'),
+        subtitle: const Text('마지막으로 담은 재생 순서 · 순서 바꾸기 · 비우기'),
+        onTap: () => Navigator.push<void>(
+          context,
+          MaterialPageRoute(builder: (_) => const RecentPlaybackScreen()),
+        ),
+      ),
+      ListTile(
         leading: const Icon(Icons.inventory_2_outlined),
         title: const Text('백업 파일'),
         subtitle: const Text('책과 목소리 보관 · 백업 파일 검사'),
@@ -951,5 +1146,16 @@ class _Empty extends StatelessWidget {
         Text(detail, textAlign: TextAlign.center),
       ],
     ),
+  );
+}
+
+/// 설정 › 최근재생목록. 탭에 있던 목록을 그대로 옮겼다 — 같은 [QueuePanel] 을 쓴다.
+class RecentPlaybackScreen extends StatelessWidget {
+  const RecentPlaybackScreen({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('최근재생목록')),
+    body: const SafeArea(child: QueuePanel()),
+    bottomNavigationBar: const FloatingPlayer(),
   );
 }
