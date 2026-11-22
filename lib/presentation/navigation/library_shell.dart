@@ -1,4 +1,5 @@
 import '../settings/backup_screen.dart';
+import '../settings/voice_samples_screen.dart';
 
 import 'dart:io';
 
@@ -1135,6 +1136,15 @@ class _SettingsState extends State<_Settings> {
         onTap: () => Navigator.push<void>(
           context,
           MaterialPageRoute(builder: (_) => const RecentPlaybackScreen()),
+        ),
+      ),
+      ListTile(
+        leading: const Icon(Icons.record_voice_over_outlined),
+        title: const Text('내 목소리 자료'),
+        subtitle: const Text('직접 녹음과 글이 얼마나 모였나 · 20분쯤 모이면 내 목소리 만들기'),
+        onTap: () => Navigator.push<void>(
+          context,
+          MaterialPageRoute(builder: (_) => const VoiceSamplesScreen()),
         ),
       ),
       ListTile(

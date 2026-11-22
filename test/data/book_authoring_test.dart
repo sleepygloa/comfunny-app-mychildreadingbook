@@ -238,7 +238,7 @@ void main() {
     final page = vm.draft!.content.pages.first.id;
     vm.setText(page, '작은 곰');
     vm.reorder(0, 1);
-    await vm.attachRecording(page, await source('v.m4a'));
+    await vm.attachRecording(page, await source('v.m4a'), durationMs: 4200);
     vm.setStep(AuthoringStep.voice);
     expect(await vm.save(), isTrue);
     vm.dispose();
@@ -247,6 +247,11 @@ void main() {
     expect(restored.draft!.step, AuthoringStep.voice);
     expect(restored.draft!.content.orderedPages.last.id, page);
     expect(restored.draft!.content.orderedPages.last.text, '작은 곰');
+    // 녹음 길이는 내 목소리 자료 분량에 쓰인다 — 저장 후 다시 열어도 남아야 한다
+    expect(
+      restored.draft!.content.orderedPages.last.tracks.single.durationMs,
+      4200,
+    );
     expect(restored.isDirty, isFalse);
     restored.dispose();
   });

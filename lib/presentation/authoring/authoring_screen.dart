@@ -34,6 +34,9 @@ class _AuthoringScreenState extends State<AuthoringScreen>
   RecordingService? _recorder;
   AudioPlayer? _preview;
   String? _recordingPage;
+
+  /// 녹음을 시작한 때. 녹음 길이를 재 목소리 자료 분량에 쓴다.
+  DateTime? _recordStartedAt;
   bool _recordBusy = false;
   int _mediaGeneration = 0;
   DeviceTtsService? _previewTts;
@@ -117,6 +120,7 @@ class _AuthoringScreenState extends State<AuthoringScreen>
         await _recorder!.cancel();
         return;
       }
+      _recordStartedAt = DateTime.now();
       if (mounted) setState(() => _recordingPage = pageId);
     } on Object {
       if (mounted) setState(() => _message = '녹음을 시작하지 못했어요. 마이크 권한을 확인해 주세요.');
@@ -130,9 +134,17 @@ class _AuthoringScreenState extends State<AuthoringScreen>
     if (id == null) return;
     setState(() => _recordBusy = true);
     try {
+      final started = _recordStartedAt;
+      _recordStartedAt = null;
       final path = await _recorder?.stop();
       if (path != null) {
-        await _vm.attachRecording(id, path);
+        await _vm.attachRecording(
+          id,
+          path,
+          durationMs: started == null
+              ? null
+              : DateTime.now().difference(started).inMilliseconds,
+        );
         if (!_vm.isBusy && _vm.error == null) await _vm.save();
       }
       if (mounted) {
