@@ -58,7 +58,9 @@ Future<void> setupLocator() async {
             .startsWith('.restore-stage-')) {
       try {
         await entity.delete(recursive: true);
-      } on Object { /* 다음 시작 또는 OS 캐시 정리 때 회수한다. */ }
+      } on Object {
+        /* 다음 시작 또는 OS 캐시 정리 때 회수한다. */
+      }
     }
   }
   await registerWith(docs);
@@ -99,6 +101,12 @@ Future<void> registerWith(Directory baseDir) async {
     )
     ..registerLazySingleton<ReadingEventRepository>(
       () => ReadingEventRepositoryImpl(sl<JsonStore>()),
+    )
+    ..registerLazySingleton<TopicRepository>(
+      () => TopicRepositoryImpl(sl<JsonStore>()),
+    )
+    ..registerLazySingleton<BookTagRepository>(
+      () => BookTagRepositoryImpl(sl<JsonStore>()),
     );
 
   sl.registerLazySingleton<RecentPlaybackRepository>(

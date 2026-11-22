@@ -1,7 +1,9 @@
+import '../../domain/entities/book_tags.dart';
 import '../../domain/entities/child_profile.dart';
 import '../../domain/entities/playlist.dart';
 import '../../domain/entities/reading_event.dart';
 import '../../domain/entities/series.dart';
+import '../../domain/entities/topic.dart';
 import '../../domain/entities/voice_profile.dart';
 import '../../domain/repositories/repositories.dart';
 import '../local/app_paths.dart';
@@ -113,4 +115,37 @@ class ReadingEventRepositoryImpl extends IndexRepositoryBase<ReadingEvent>
       return true;
     }).toList();
   }
+}
+
+/// 주제 사전 저장소 — `index/topics.json`.
+class TopicRepositoryImpl extends IndexRepositoryBase<Topic>
+    implements TopicRepository {
+  TopicRepositoryImpl(JsonStore store) : super(store, AppPaths.topicsFile);
+
+  @override
+  Topic fromJson(Map<String, Object?> json) => Topic.fromJson(json);
+  @override
+  Map<String, Object?> toJson(Topic item) => item.toJson();
+  @override
+  String idOf(Topic item) => item.id;
+
+  /// 보호자가 정한 순서, 같으면 이름순.
+  @override
+  int Function(Topic, Topic)? get comparator => (a, b) {
+    final order = a.order.compareTo(b.order);
+    return order != 0 ? order : a.name.compareTo(b.name);
+  };
+}
+
+/// 책 꼬리표 저장소 — `index/book_tags.json`.
+class BookTagRepositoryImpl extends IndexRepositoryBase<BookTags>
+    implements BookTagRepository {
+  BookTagRepositoryImpl(JsonStore store) : super(store, AppPaths.bookTagsFile);
+
+  @override
+  BookTags fromJson(Map<String, Object?> json) => BookTags.fromJson(json);
+  @override
+  Map<String, Object?> toJson(BookTags item) => item.toJson();
+  @override
+  String idOf(BookTags item) => item.contentId;
 }

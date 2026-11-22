@@ -285,6 +285,8 @@ classDiagram
     ReadingEvent "*" o-- "0..1" ChildProfile
 ```
 
+- **주제 사전 `Topic` · 책 꼬리표 `BookTags`(2026-11-22)** — 책 본체와 따로 `index/topics.json` · `index/book_tags.json` 에 둔다.
+  `BookTags` 의 id 는 책 id, 주제는 id 로만 참조한다. 모아보기는 저장하지 않고 꼬리표에서 계산한다. 상세: [specs/watch-topics/design.md](specs/watch-topics/design.md)
 - 최근재생목록(`RecentPlayback`)은 엔티티가 아니라 `bookIds`·`currentId` 만 담는 저장 레코드다(최대 1,000권, 삭제된 ID 는 복원 시 제외).
 - `VoiceProfile`·`ChildProfile`·`VideoClip`·`GrowthDimensions` 는 M2~M4 용 **선정의**다 — 저장소는 DI 에 등록돼 있으나 화면이 없다.
   `GrowthDimensions` 편집 화면은 2026-10-06 죽은 코드 정리로 사라졌고(열리지 않던 `ContentEditScreen`), 값은 기본 0 으로 저장된다. M4 에서 화면을 다시 만든다.
@@ -313,6 +315,7 @@ VoiceStatus   : pending | ready | failed
 ├── index/
 │   ├── series.json · playlists.json · children.json
 │   ├── voice_profiles.json · reading_events.json
+│   ├── topics.json · book_tags.json   # 주제 사전 · 책 꼬리표 (2026-11-22)
 │   └── recent_playback.json
 ├── drafts/{contentId}/data.json + assets/
 ├── reading_positions/{contentId}/data.json
@@ -445,4 +448,5 @@ M2 연동 단계에서 도입할 때의 경계다. **지금은 앱이 어떤 클
 | 2026-09-22 | 2-2a `.mcrb` 백업 파일 저장·검사(Android SAF) |
 | 2026-09-28 | 2-2b 현재 책장 복원 — 저널 트랜잭션·StorageGate·재시작 복구 |
 | 2026-11-19 | 주제 배지 · 영상처럼 보기 · 가족 계정 · 움직이는 그림 요구사항([specs/watch-topics](specs/watch-topics/requirements.md)), **ADR-15 책 그림만 클라우드 AI 허용** — 시안만, 코드 없음 |
+| 2026-11-22 | 1차 구현: 주제 사전 · 책 꼬리표(주제 · 즐겨찾기 · 나이 · 누리과정) 저장과 복원 검사, 책장 배지 · ⚙ 거르기 · 표지 별, 3번째 탭 모아보기, 최근재생목록은 설정 안으로 |
 | 2026-10-06 | 묶음 재편(`200-apps-games/apps/01-mychild-reading`), 죽은 코드 정리(`LibraryScreen`·`ContentEditScreen`·AI 잡 enum·`E-MCR-503`·`cupertino_icons`), **OS 클라우드 백업 차단**, 문서 실측 현행화 |

@@ -7,11 +7,13 @@
 /// 구현체는 파일을 나눈다(로직이 있으므로).
 library;
 
+import '../entities/book_tags.dart';
 import '../entities/child_profile.dart';
 import '../entities/content.dart';
 import '../entities/playlist.dart';
 import '../entities/reading_event.dart';
 import '../entities/series.dart';
+import '../entities/topic.dart';
 import '../entities/voice_profile.dart';
 
 /// 콘텐츠(책·영상) 저장소. 콘텐츠별 `library/{id}/data.json` 을 다룬다.
@@ -71,4 +73,19 @@ abstract class VoiceProfileRepository {
   Future<List<VoiceProfile>> getAll();
   Future<void> save(VoiceProfile profile);
   Future<void> delete(String id);
+}
+
+/// 주제 사전 저장소 — `index/topics.json`.
+abstract class TopicRepository {
+  /// 저장된 사전. 아직 저장한 적이 없으면 빈 목록(기본 사전은 화면 쪽에서 채운다).
+  Future<List<Topic>> getAll();
+  Future<void> save(Topic topic);
+  Future<void> delete(String id);
+}
+
+/// 책 꼬리표 저장소 — `index/book_tags.json`. 행 id = 책 id.
+abstract class BookTagRepository {
+  Future<List<BookTags>> getAll();
+  Future<void> save(BookTags tags);
+  Future<void> delete(String contentId);
 }
