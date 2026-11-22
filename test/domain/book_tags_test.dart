@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mychild_reading/domain/entities/book_tags.dart';
 import 'package:mychild_reading/domain/entities/topic.dart';
+import 'package:mychild_reading/domain/entities/content.dart';
+import 'package:mychild_reading/domain/enums/enums.dart';
 
 /// 합성 데이터만 쓴다. 실제 책 · 아이 정보 없음.
 void main() {
@@ -82,5 +84,19 @@ void main() {
       expect(const BookTags(contentId: 'b').isEmpty, isTrue);
       expect(const BookTags(contentId: 'b', favorite: true).isEmpty, isFalse);
     });
+  });
+
+  test('음원(audio) 종류는 round-trip 되고 아직 재생할 수 없다', () {
+    final song = Content(
+      id: 'song',
+      type: ContentType.audio,
+      title: '합성 동요',
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+    );
+    final back = Content.fromJson(song.toJson());
+    expect(back.type, ContentType.audio);
+    expect(back.isAudio, isTrue);
+    expect(back.isPlayable, isFalse);
   });
 }

@@ -9,6 +9,7 @@ import '../../domain/entities/playlist.dart';
 import '../../domain/entities/series.dart';
 import '../../domain/entities/book_draft.dart';
 import '../../domain/entities/topic.dart';
+import '../../domain/enums/enums.dart';
 import '../../domain/repositories/repositories.dart';
 import '../../domain/repositories/reading_workspace_repositories.dart';
 
@@ -29,6 +30,13 @@ class CatalogViewModel extends ChangeNotifier {
   final TopicRepository topicRepository;
   final BookTagRepository bookTags;
   List<Content> books = [];
+
+  /// 지금 고른 방. 앱을 켜면 늘 도서관에서 시작한다(오너 결정 — 도서관이 본채).
+  LibraryRoom room = LibraryRoom.library;
+
+  /// 책장 탭에 보일 목록 — 고른 방의 종류만. 도서관이면 [books] 와 같다.
+  /// 플레이리스트 · 모아보기는 계속 [books](책)를 쓴다.
+  List<Content> shelfItems = [];
   List<Series> seriesList = [];
   List<Playlist> lists = [];
   List<BookDraft> draftList = [];
@@ -65,8 +73,13 @@ class CatalogViewModel extends ChangeNotifier {
     _notify();
     try {
       await action();
-      books = (await contents.getAll()).where((b) => b.isBook).toList()
-        ..sort(compareBooks);
+      // 방을 바꿀 때마다 저장소에서 다시 읽는다 — 화면에 남은 목록을 거르지 않는다(오너 결정).
+      final all = await contents.getAll();
+      books = all.where((b) => b.isBook).toList()..sort(compareBooks);
+      shelfItems = room == LibraryRoom.library
+          ? books
+          : (all.where((b) => b.type == room.type).toList()
+              ..sort(compareBooks));
       seriesList = await series.getAll();
       lists = await playlists.getAll();
       draftList = await drafts.getAll();
@@ -312,6 +325,21 @@ class CatalogViewModel extends ChangeNotifier {
     return out;
   }
 
+  /// 방 고르기. 같은 방이면 아무것도 하지 않는다.
+  Future<void> selectRoom(LibraryRoom value) async {
+    // FLOW 1: 검증 — 같은 방을 다시 누르면 다시 읽지 않는다
+    if (value == room) return;
+    // FLOW 2: 방을 바꾸고 거르기 조건을 푼다 — 다른 방의 조건이 남으면 빈 목록처럼 보인다
+    room = value;
+    query = '';
+    publisher = null;
+    topicFilter = null;
+    favoritesOnly = false;
+    ageFilter = null;
+    // FLOW 9: 그 방 목록을 다시 읽는다
+    await load();
+  }
+
   void search(String value) {
     query = value;
     _notify();
@@ -374,4 +402,16 @@ class BookCollection {
   final String title;
   final String emoji;
   final List<Content> books;
+}
+
+/// 제목을 눌러 고르는 세 방. 종류([ContentType])로 목록을 나눈다.
+enum LibraryRoom {
+  music(ContentType.audio, '작은 음악방', '🎵'),
+  library(ContentType.pagedBook, '작은 도서관', '📚'),
+  cinema(ContentType.video, '작은 영상관', '🎬');
+
+  const LibraryRoom(this.type, this.label, this.emoji);
+  final ContentType type;
+  final String label;
+  final String emoji;
 }

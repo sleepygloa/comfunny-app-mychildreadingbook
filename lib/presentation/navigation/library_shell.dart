@@ -109,9 +109,12 @@ class _LibraryShellState extends State<LibraryShell> {
     final catalog = context.watch<CatalogViewModel>();
     return Scaffold(
       appBar: AppBar(
-        title: Text(['작은 도서관', '플레이리스트', '모아보기', '설정'][_tab]),
+        title: _tab == 0
+            ? _RoomTitle(catalog: catalog)
+            : Text(['', '플레이리스트', '모아보기', '설정'][_tab]),
         actions: [
-          if (_tab < 2)
+          // 책 등록은 도서관에서만 — 음원 · 영상 넣기는 다음 차례다.
+          if (_tab == 1 || (_tab == 0 && catalog.room == LibraryRoom.library))
             IconButton(
               tooltip: _tab == 0 ? '책 등록' : '플레이리스트 만들기',
               icon: const Icon(Icons.add),
@@ -130,7 +133,7 @@ class _LibraryShellState extends State<LibraryShell> {
                       if (title != null) await catalog.createList(title);
                     },
             ),
-          if (_tab == 0)
+          if (_tab == 0 && catalog.room == LibraryRoom.library)
             PopupMenuButton<String>(
               tooltip: '책장 메뉴',
               onSelected: (value) async {
@@ -245,7 +248,10 @@ class _LibraryShellState extends State<LibraryShell> {
     );
   }
 
-  Widget _books(CatalogViewModel c) => RefreshIndicator(
+  Widget _books(CatalogViewModel c) =>
+      c.room == LibraryRoom.library ? _library(c) : _OtherRoom(catalog: c);
+
+  Widget _library(CatalogViewModel c) => RefreshIndicator(
     onRefresh: c.load,
     child: ListView(
       padding: const EdgeInsets.all(20),
@@ -1124,6 +1130,170 @@ class _Settings extends StatelessWidget {
       ),
     ],
   );
+}
+
+/// 앱바 제목 "작은 도서관 ▾". 누르면 방 고르기 시트가 열린다.
+class _RoomTitle extends StatelessWidget {
+  const _RoomTitle({required this.catalog});
+  final CatalogViewModel catalog;
+  @override
+  Widget build(BuildContext context) => Tooltip(
+    message: '방 고르기',
+    child: InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: catalog.isBusy ? null : () => _pickRoom(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(catalog.room.label, overflow: TextOverflow.ellipsis),
+            ),
+            const Icon(Icons.arrow_drop_down),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  Future<void> _pickRoom(BuildContext context) async {
+    final picked = await showModalBottomSheet<LibraryRoom>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          child: Row(
+            children: [
+              for (final r in LibraryRoom.values)
+                Expanded(
+                  child: _RoomTile(
+                    room: r,
+                    selected: r == catalog.room,
+                    onTap: () => Navigator.pop(ctx, r),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (picked != null) await catalog.selectRoom(picked);
+  }
+}
+
+/// 방 하나 — 큰 그림 아래에 이름(2026-11-21 오너 결정: 아이가 보니 글자보다 그림).
+class _RoomTile extends StatelessWidget {
+  const _RoomTile({
+    required this.room,
+    required this.selected,
+    required this.onTap,
+  });
+  final LibraryRoom room;
+  final bool selected;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: room.label,
+      excludeSemantics: true,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: Column(
+            children: [
+              AspectRatio(
+                aspectRatio: 1,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? scheme.primaryContainer
+                        : scheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: selected ? scheme.primary : Colors.transparent,
+                      width: 3,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: FittedBox(
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Text(
+                        room.emoji,
+                        style: const TextStyle(fontSize: 48),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                room.label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                style: TextStyle(
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 음악방 · 영상관 책장. 넣기 · 재생은 다음 차례라 지금은 목록만 보인다.
+class _OtherRoom extends StatelessWidget {
+  const _OtherRoom({required this.catalog});
+  final CatalogViewModel catalog;
+  @override
+  Widget build(BuildContext context) {
+    final music = catalog.room == LibraryRoom.music;
+    final items = catalog.shelfItems;
+    return RefreshIndicator(
+      onRefresh: catalog.load,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          if (items.isEmpty)
+            _Empty(
+              icon: music ? Icons.music_note_outlined : Icons.movie_outlined,
+              title: music ? '아직 음원이 없어요' : '아직 영상이 없어요',
+              detail: music
+                  ? '동요 · 이야기 음원 넣기는 곧 만들어요.\n지금은 작은 도서관에서 책을 들어 주세요.'
+                  : '영상 넣기는 곧 만들어요.\n지금은 작은 도서관에서 책을 들어 주세요.',
+            ),
+          for (final item in items)
+            Card(
+              child: ListTile(
+                leading: Text(
+                  catalog.room.emoji,
+                  style: const TextStyle(fontSize: 28),
+                ),
+                title: Text(item.title),
+                subtitle: Text(catalog.seriesTitle(item)),
+              ),
+            ),
+          const SizedBox(height: 12),
+          Center(
+            child: TextButton.icon(
+              onPressed: () => catalog.selectRoom(LibraryRoom.library),
+              icon: const Text('📚'),
+              label: const Text('작은 도서관으로'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _Empty extends StatelessWidget {

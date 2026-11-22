@@ -61,6 +61,7 @@ class Content {
 
   bool get isBook => type == ContentType.pagedBook;
   bool get isVideo => type == ContentType.video;
+  bool get isAudio => type == ContentType.audio;
 
   int get pageCount => pages.length;
 
@@ -73,8 +74,12 @@ class Content {
   }
 
   /// 재생할 수 있는 상태인가.
-  bool get isPlayable =>
-      isBook ? pages.isNotEmpty : (videoPath != null && videoPath!.isNotEmpty);
+  /// 음원은 아직 파일 자리가 없어 재생할 수 없다(넣기 · 재생은 다음 차례).
+  bool get isPlayable => switch (type) {
+    ContentType.pagedBook => pages.isNotEmpty,
+    ContentType.video => videoPath != null && videoPath!.isNotEmpty,
+    ContentType.audio => false,
+  };
 
   Content copyWith({
     String? id,
