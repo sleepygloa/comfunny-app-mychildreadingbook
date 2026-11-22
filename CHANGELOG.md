@@ -1,5 +1,16 @@
 # 변경 이력
 
+## [Unreleased] - 사진에서 글자 뽑기 · 글 크게 보기 (2026-11-22)
+
+### Added
+- 목소리 넣기의 쪽마다 "사진에서 글자 뽑기": 쪽 사진의 한글을 폰 안에서 읽어 "읽어줄 글"을 채운다. 이미 쓴 글은 바꾸기 전에 묻는다. 틀린 글자는 "글 · 기기 읽기"에서 고친다.
+- "글 크게 보기": 뽑은 글을 큰 글씨로 펼쳐 녹음하면서 보고 읽는다.
+- 의존성 `google_mlkit_text_recognition 1.0.3`(MIT) + Android 한국어 번들 모델 `text-recognition-korean 16.0.1`(ML Kit 약관). 에러코드 `E-MCR-530`.
+
+### Security
+- ML Kit 이 끌어오는 `INTERNET` · `ACCESS_NETWORK_STATE` 권한을 매니페스트에서 지워 네트워크 0 을 유지한다(ADR-16). 합쳐진 릴리스 매니페스트 확인은 미실행(이 환경에 Android SDK 없음).
+- iOS 는 플러그인이 한국어를 아직 못 읽어 버튼이 안내만 한다.
+
 ## [Unreleased] - 글자 또렷하게 · 반사 안내 (2026-11-22)
 
 ### Added

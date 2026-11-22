@@ -5,6 +5,11 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- [A-06-7] 네트워크 0 유지. 글자 인식(ML Kit) 라이브러리가 통계 전송용으로 INTERNET·네트워크 상태 권한을
+         끌어오므로 합쳐진 매니페스트에서 지운다. 글자 인식은 기기 안 모델로만 돈다(2026-11-22).
+         debug 빌드는 src/debug 매니페스트가 개발 도구용 INTERNET 을 따로 가진다 -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
     <!-- [A-06-7] 아이 사진·보호자 녹음이 OS 백업으로 기기 밖에 나가지 않게 막는다(오너 결정 2026-10-06).
          - allowBackup=false: Google 드라이브 자동 백업(기본 true)을 끈다
          - fullBackupContent=false: Android 6~11 의 전체 백업 규칙도 비운다

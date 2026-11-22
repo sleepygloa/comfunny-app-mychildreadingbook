@@ -11,6 +11,9 @@ import '../../data/local/authoring_media_store.dart';
 import '../../data/local/json_store.dart';
 import '../../data/services/device_tts_service.dart';
 import '../../data/services/recording_service.dart';
+import '../../core/app_logger.dart';
+import '../../core/error_codes.dart';
+import '../../domain/services/text_extractor.dart';
 import '../../domain/entities/book_page.dart';
 import '../../domain/enums/enums.dart';
 import '../../service_locator.dart';
@@ -37,6 +40,16 @@ class _AuthoringScreenState extends State<AuthoringScreen>
   bool _allowPop = false;
   String? _message;
   late AuthoringViewModel _vm;
+
+  /// 글자 뽑기 중인 쪽. 한 번에 한 쪽만 — 인식기는 하나다.
+  String? _extractingPage;
+
+  /// 글을 큰 글씨로 펼쳐 둔 쪽들. 녹음하면서 보고 읽는다.
+  final Set<String> _bigText = {};
+
+  /// 글 입력칸을 새 값으로 다시 그리기 위한 쪽별 번호.
+  /// 왜: 입력칸은 initialValue 로 한 번만 채워진다. 뽑은 글을 넣으면 key 를 바꿔 새로 만든다.
+  final Map<String, int> _textRevision = {};
   @override
   void initState() {
     super.initState();
@@ -170,6 +183,71 @@ class _AuthoringScreenState extends State<AuthoringScreen>
       if (!mounted || generation != _mediaGeneration) await _preview?.stop();
     } on Object {
       if (mounted) setState(() => _message = '미리 듣지 못했어요. 녹음을 확인해 주세요.');
+    }
+  }
+
+  /// 사진에서 글자를 뽑아 그 쪽 글을 채운다.
+  Future<void> _extractText(BookPage page) async {
+    // FLOW 1: 다른 작업 중이면 하지 않는다. 이미 쓴 글은 덮기 전에 묻는다
+    if (_extractingPage != null || _vm.isBusy || _vm.draft == null) return;
+    final extractor = sl<TextExtractor>();
+    if (!extractor.isAvailable) {
+      setState(() => _message = '이 기기에서는 아직 글자 뽑기를 쓸 수 없어요. 글을 직접 적어 주세요.');
+      return;
+    }
+    if (page.hasText) {
+      final replace = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('지금 글을 바꿀까요?'),
+          content: const Text('사진에서 새로 뽑은 글로 바꿔요.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('그대로 두기'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('바꾸기'),
+            ),
+          ],
+        ),
+      );
+      if (replace != true || !mounted) return;
+    }
+    setState(() {
+      _extractingPage = page.id;
+      _message = null;
+    });
+    try {
+      // FLOW 2: 초안 폴더의 실제 사진 파일을 찾는다
+      final file = await AuthoringMediaStore(sl<JsonStore>().baseDir)
+          .file('drafts', _vm.draft!.id, page.imagePath);
+      // FLOW 3: 기기 안에서 읽고 녹음하기 좋게 다듬는다
+      final text = tidyExtractedText(await extractor.extract(file.path));
+      if (!mounted) return;
+      if (text.isEmpty) {
+        setState(
+          () => _message = '글자를 찾지 못했어요. 사진을 "글자 또렷하게"로 보정한 뒤 다시 해 보세요.',
+        );
+        return;
+      }
+      // FLOW 4: 글을 채우고 큰 글씨로 펼친다 — 바로 보고 녹음할 수 있게
+      _vm.setText(page.id, text);
+      setState(() {
+        _textRevision[page.id] = (_textRevision[page.id] ?? 0) + 1;
+        _bigText.add(page.id);
+        _message = '글을 뽑았어요. 틀린 글자는 "글 · 기기 읽기"에서 고쳐 주세요.';
+      });
+    } on Object catch (e) {
+      // 글 내용·파일 경로는 남기지 않는다 [A-08]
+      AppLogger.w('${ErrorCode.textExtractFailure} 글자 뽑기 실패: ${e.runtimeType}');
+      if (mounted) {
+        setState(() => _message = ErrorCode.textExtractFailure.userMessage);
+      }
+    } finally {
+      // FLOW 9: 버튼을 다시 켠다
+      if (mounted) setState(() => _extractingPage = null);
     }
   }
 
@@ -484,6 +562,32 @@ class _AuthoringScreenState extends State<AuthoringScreen>
                                           ? '기기 읽기를 사용해요'
                                           : '목소리를 담아 주세요',
                                     ),
+                                    if (page.hasText &&
+                                        _bigText.contains(page.id))
+                                      Container(
+                                        key: ValueKey('big-text-${page.id}'),
+                                        width: double.infinity,
+                                        margin: const EdgeInsets.symmetric(
+                                          vertical: 8,
+                                        ),
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .surfaceContainerHighest,
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                        ),
+                                        // 녹음하면서 폰만 보고 읽을 수 있게 크게 쓴다
+                                        child: Text(
+                                          page.text!,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headlineSmall
+                                              ?.copyWith(height: 1.6),
+                                        ),
+                                      ),
                                     Wrap(
                                       spacing: 8,
                                       runSpacing: 8,
@@ -514,6 +618,49 @@ class _AuthoringScreenState extends State<AuthoringScreen>
                                           icon: const Icon(Icons.play_arrow),
                                           label: const Text('들어보기'),
                                         ),
+                                        OutlinedButton.icon(
+                                          onPressed:
+                                              locked ||
+                                                  _extractingPage != null ||
+                                                  _recordingPage != null
+                                              ? null
+                                              : () => _extractText(page),
+                                          icon: _extractingPage == page.id
+                                              ? const SizedBox.square(
+                                                  dimension: 18,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                      ),
+                                                )
+                                              : const Icon(
+                                                  Icons
+                                                      .document_scanner_outlined,
+                                                ),
+                                          label: Text(
+                                            _extractingPage == page.id
+                                                ? '글자 읽는 중'
+                                                : '사진에서 글자 뽑기',
+                                          ),
+                                        ),
+                                        if (page.hasText)
+                                          TextButton.icon(
+                                            onPressed: () => setState(
+                                              () => _bigText.contains(page.id)
+                                                  ? _bigText.remove(page.id)
+                                                  : _bigText.add(page.id),
+                                            ),
+                                            icon: Icon(
+                                              _bigText.contains(page.id)
+                                                  ? Icons.text_decrease
+                                                  : Icons.text_increase,
+                                            ),
+                                            label: Text(
+                                              _bigText.contains(page.id)
+                                                  ? '큰 글씨 접기'
+                                                  : '글 크게 보기',
+                                            ),
+                                          ),
                                       ],
                                     ),
                                   ],
@@ -535,7 +682,9 @@ class _AuthoringScreenState extends State<AuthoringScreen>
                                     children: [
                                       if (widget.voiceOnly)
                                         TextFormField(
-                                          key: ValueKey('text-${page.id}'),
+                                          key: ValueKey(
+                                            'text-${page.id}-${_textRevision[page.id] ?? 0}',
+                                          ),
                                           initialValue: page.text,
                                           enabled: !locked,
                                           maxLines: 3,

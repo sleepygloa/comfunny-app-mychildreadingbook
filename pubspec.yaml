@@ -26,6 +26,7 @@ dependencies:
   camera: ^0.12.1
   audio_service: 0.18.19
   audio_session: 0.2.4
+  google_mlkit_text_recognition: ^1.0.3
 
 dev_dependencies:
   flutter_test:

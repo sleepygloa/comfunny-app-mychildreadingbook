@@ -38,6 +38,12 @@ class ErrorCode {
   /// 보기는 계속되므로 사용자에게 알리지 않고 기록만 한다.
   static const screenGuardFailure = ErrorCode('E-MCR-520', '화면 보호를 켜지 못했어요.');
 
+  /// 사진에서 글자 뽑기(기기 안 글자 인식)가 실패했다. 글은 그대로 두고 직접 쓰게 안내한다.
+  static const textExtractFailure = ErrorCode(
+    'E-MCR-530',
+    '글자를 읽지 못했어요. 직접 적거나 다시 해 주세요.',
+  );
+
   @override
   String toString() => code;
 }
