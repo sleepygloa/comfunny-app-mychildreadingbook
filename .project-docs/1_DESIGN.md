@@ -294,7 +294,7 @@ classDiagram
 ### Enum
 
 ```
-ContentType   : pagedBook | video
+ContentType   : pagedBook | video | audio   # audio = 작은 음악방(2026-11-22, 넣기 · 재생 미구현)
 AudioSource   : deviceTts | parentRecording | aiClonedVoice | aiNarration
 VoiceStatus   : pending | ready | failed
 ```
@@ -449,4 +449,5 @@ M2 연동 단계에서 도입할 때의 경계다. **지금은 앱이 어떤 클
 | 2026-09-28 | 2-2b 현재 책장 복원 — 저널 트랜잭션·StorageGate·재시작 복구 |
 | 2026-11-19 | 주제 배지 · 영상처럼 보기 · 가족 계정 · 움직이는 그림 요구사항([specs/watch-topics](specs/watch-topics/requirements.md)), **ADR-15 책 그림만 클라우드 AI 허용** — 시안만, 코드 없음 |
 | 2026-11-22 | 1차 구현: 주제 사전 · 책 꼬리표(주제 · 즐겨찾기 · 나이 · 누리과정) 저장과 복원 검사, 책장 배지 · ⚙ 거르기 · 표지 별, 3번째 탭 모아보기, 최근재생목록은 설정 안으로 |
+| 2026-11-22 | 2차 구현: 방 고르기(작은 음악방 · 도서관 · 영상관) — `ContentType.audio` 추가, 방을 바꾸면 그 종류만 다시 읽는다 |
 | 2026-10-06 | 묶음 재편(`200-apps-games/apps/01-mychild-reading`), 죽은 코드 정리(`LibraryScreen`·`ContentEditScreen`·AI 잡 enum·`E-MCR-503`·`cupertino_icons`), **OS 클라우드 백업 차단**, 문서 실측 현행화 |

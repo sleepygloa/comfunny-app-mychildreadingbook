@@ -369,6 +369,35 @@ void main() {
     await settle(tester);
   });
 
+  testWidgets('제목을 눌러 음악방 · 영상관 · 도서관을 큰 그림으로 고른다', (tester) async {
+    tester.view.physicalSize = const Size(430, 932);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const MyChildReadingApp());
+    await settle(tester);
+    expect(find.byTooltip('책 등록'), findsOneWidget);
+    await tester.tap(find.byTooltip('방 고르기'));
+    await settle(tester);
+    expect(find.text('🎵'), findsOneWidget);
+    expect(find.text('🎬'), findsOneWidget);
+    await tester.tap(find.text('작은 음악방'));
+    await settle(tester);
+    expect(find.text('아직 음원이 없어요'), findsOneWidget);
+    expect(find.byTooltip('책 등록'), findsNothing);
+    await tester.tap(find.byTooltip('방 고르기'));
+    await settle(tester);
+    await tester.tap(find.text('작은 영상관'));
+    await settle(tester);
+    expect(find.text('아직 영상이 없어요'), findsOneWidget);
+    await tester.tap(find.text('작은 도서관으로'));
+    await settle(tester);
+    expect(find.text('첫 이야기를 기다리고 있어요'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    await settle(tester);
+  });
+
   for (final size in [const Size(320, 740), const Size(1024, 768)]) {
     testWidgets('책장은 $size 및 큰 글자에서 넘치지 않는다', (tester) async {
       tester.view.physicalSize = size;

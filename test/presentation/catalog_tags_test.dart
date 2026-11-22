@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mychild_reading/data/services/restore_validator.dart';
 import 'package:mychild_reading/domain/entities/book_tags.dart';
+import 'package:mychild_reading/domain/entities/content.dart';
+import 'package:mychild_reading/domain/enums/enums.dart';
 import 'package:mychild_reading/domain/entities/topic.dart';
 import 'package:mychild_reading/domain/repositories/reading_workspace_repositories.dart';
 import 'package:mychild_reading/domain/repositories/repositories.dart';
@@ -127,5 +129,30 @@ void main() {
     (json['data'] as List).first['topicIds'] = ['../bad'];
     await file.writeAsString(jsonEncode(json));
     await expectLater(RestoreValidator().validate(tmp), throwsA(anything));
+  });
+
+  test('방을 바꾸면 그 방 종류만 다시 읽고, 거르기 조건을 푼다', () async {
+    // 책장을 읽은 뒤에 음원이 생겨도 방을 바꾸면 보인다 — 화면 목록을 거르지 않고 다시 읽는다.
+    await sl<ContentRepository>().save(
+      Content(
+        id: 'song',
+        type: ContentType.audio,
+        title: '합성 동요',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+      ),
+    );
+    c.setFavoritesOnly(true);
+    c.search('책');
+    await c.selectRoom(LibraryRoom.music);
+    expect(c.shelfItems.map((b) => b.id), ['song']);
+    expect(c.favoritesOnly, isFalse);
+    expect(c.query, isEmpty);
+    // 플레이리스트 · 모아보기가 쓰는 책 목록은 방과 무관하게 책만 담는다.
+    expect(c.books.map((b) => b.id), ['a', 'b', 'c']);
+    await c.selectRoom(LibraryRoom.cinema);
+    expect(c.shelfItems, isEmpty);
+    await c.selectRoom(LibraryRoom.library);
+    expect(c.shelfItems.map((b) => b.id), ['a', 'b', 'c']);
   });
 }
