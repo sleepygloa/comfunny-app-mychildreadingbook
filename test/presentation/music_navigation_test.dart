@@ -131,6 +131,8 @@ void main() {
       series: sl<SeriesRepository>(),
       playlists: sl<PlaylistRepository>(),
       drafts: sl<BookDraftRepository>(),
+      topicRepository: sl<TopicRepository>(),
+      bookTags: sl<BookTagRepository>(),
     );
   });
   tearDown(() async {

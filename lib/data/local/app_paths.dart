@@ -28,6 +28,8 @@ class AppPaths {
   static const String childrenFile = '$indexDir/children.json';
   static const String voiceProfilesFile = '$indexDir/voice_profiles.json';
   static const String readingEventsFile = '$indexDir/reading_events.json';
+  static const String topicsFile = '$indexDir/topics.json';
+  static const String bookTagsFile = '$indexDir/book_tags.json';
 
   // ── 콘텐츠별 ──────────────────────────────────────────────
 

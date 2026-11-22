@@ -143,6 +143,7 @@ iOS 는 Xcode 로 실기기 빌드 후 설정 → Apple ID → iCloud → 저장
 | **2026-10-06** | **죽은 코드 정리 · OS 백업 차단** | ✅ **304 통과 / 14 보류** · analyze **No issues** · `flutter build apk --debug` 성공(Gradle 222초, 169MB) | 353 → 304: 삭제한 화면 테스트 3파일 49건(`library_screen`·`content_edit_screen`·`content_edit_view_model`). 병합 매니페스트에 `allowBackup="false"`·`fullBackupContent="false"`·`dataExtractionRules` 확인. 삭제 심볼 `git grep` 참조 0 |
 | 2026-10-06 | iOS 백업 제외(`AppDelegate.swift`) | ⚪ **미실행** — Swift 컴파일·실기기 확인 안 됨 | 이 맥은 `xcode-select` 가 CLT 를 가리켜 iOS 빌드 불가. 표준 API(`URLResourceValues.isExcludedFromBackup`)만 사용 |
 | 2026-10-06 | Android OS 백업 실제 차단 | ⚪ **미실행** | §3.2 `dumpsys` 확인 절차 — 기기 연결 시 |
+| **2026-11-22** | **주제 · 즐겨찾기 · 모아보기 1차** | ✅ **318 통과 / 14 보류** · analyze **No issues** · APK ⚪ **미실행** | 신규 14건: 직렬화 · 방어 파싱 7(`book_tags_test`) · 꼬리표 · 모아보기 · 백업 검사 6(`catalog_tags_test`) · 화면 1(별 → 모아보기, ⚙ 거르기). 클라우드 리눅스 작업 환경 — Android SDK 없음. 이관 직후 기준 304 → 318. 화면 테스트 2건이 맥 경로 `/private/tmp` 에 스크린샷을 써서 리눅스에서는 그 폴더를 만들어야 통과한다 |
 | — | 실기기 E2E(촬영·녹음·소리·비행기 모드·잠금화면·가족 기기 복원) | ⚪ **미검증** | 사용자 요청으로 보류 중 |
 
 ### 알려진 부채와 결함

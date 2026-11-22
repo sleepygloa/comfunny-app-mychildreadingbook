@@ -102,7 +102,7 @@ flutter build apk --debug && mkdir -p apk && cp build/app/outputs/flutter-apk/ap
 `[A-03]` + `[B-02]` §2.3. Flutter 앱을 모듈 루트에 직접 둔다([ADR-10](1_DESIGN.md#14-설계-결정-adr)).
 
 ```text
-01-mychild-reading/
+comfunny-app-mychildreadingbook/
 ├── AGENTS.md · CLAUDE.md · README.md · CHANGELOG.md
 ├── .project-docs/                    # 문서 SSOT — INDEX.md 부터 · specs/astra-reading/
 ├── pubspec.yaml
@@ -122,8 +122,9 @@ flutter build apk --debug && mkdir -p apk && cp build/app/outputs/flutter-apk/ap
 │   ├── core/                         # app_logger · error_codes(E-MCR-*) · json_codec(방어적 파싱)
 │   ├── domain/
 │   │   ├── enums/                    # ContentType · AudioSource · VoiceStatus
-│   │   ├── entities/                 # 12개 — content·book_page·audio_track·series·playlist·reading_event·
-│   │   │                             #   reading_position·book_draft·voice_profile·child_profile·video_clip·growth_dimensions
+│   │   ├── entities/                 # 14개 — content·book_page·audio_track·series·playlist·reading_event·
+│   │   │                             #   reading_position·book_draft·voice_profile·child_profile·video_clip·growth_dimensions·
+│   │   │                             #   topic(주제 사전)·book_tags(책 꼬리표)
 │   │   └── repositories/             # 추상 인터페이스 (구현체를 모른다)
 │   ├── data/
 │   │   ├── local/                    # app_paths · json_store(원자 쓰기·스키마 봉투) · media_storage ·
@@ -133,14 +134,15 @@ flutter build apk --debug && mkdir -p apk && cp build/app/outputs/flutter-apk/ap
 │   │   └── services/                 # device_tts_service · recording_service · page_audio_player ·
 │   │                                 #   backup_bundle · restore_validator · restore_transaction
 │   └── presentation/
-│       ├── navigation/library_shell.dart   # 하단 4탭·책 트리·플레이리스트 상세/편집
-│       ├── library/                  # astra_library_screen(만들던 책) · catalog_view_model · library_view_model
+│       ├── navigation/library_shell.dart   # 하단 4탭(책장·플레이리스트·모아보기·설정)·책 트리·플레이리스트 상세/편집·설정 › 최근재생목록
+│       ├── library/                  # astra_library_screen(만들던 책) · catalog_view_model · library_view_model ·
+│       │                             #   book_tag_sheet(주제 · 나이 정하기) · collections_tab(모아보기)
 │       ├── authoring/                # authoring_screen/VM · capture_screen · photo_edit_screen · photo_processing
 │       ├── player/                   # playback_queue · player_screen/VM · floating_player · queue_panel/screen ·
 │       │                             #   playback_editing_boundary
 │       ├── settings/                 # backup_screen · backup_view_model
 │       └── common/                   # error_banner · parent_boundary · storybook_widgets
-└── test/{domain,data,presentation}/  # 24파일
+└── test/{domain,data,presentation}/  # 26파일
 ```
 
 **활성 라우트** (`app/router.dart`): `/`(LibraryShell) · `/queue` · `/reader` · `/drafts`(만들던 책, 부모 확인) ·

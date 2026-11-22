@@ -66,6 +66,8 @@ class _MyChildReadingAppState extends State<MyChildReadingApp>
             series: sl<SeriesRepository>(),
             playlists: sl<PlaylistRepository>(),
             drafts: sl<BookDraftRepository>(),
+            topicRepository: sl<TopicRepository>(),
+            bookTags: sl<BookTagRepository>(),
           ),
         ),
         // 책장 VM 은 앱 전역에 하나면 충분하다 — 탭을 옮겨도 목록을 다시 읽지 않는다.
